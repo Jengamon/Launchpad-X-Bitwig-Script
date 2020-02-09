@@ -9,8 +9,9 @@ function Session() {
   this.custom_out = host.getMidiOutPort(1);
 
   // Setup MIDI forwarding from custom inputs to DAW w/o consuming
-  let ni = this.custom_in.createNoteInput("Custom Modes", "??????");
+  let ni = this.custom_in.createNoteInput("", "??????");
   ni.setShouldConsumeEvents(false);
+  this.note_input = ni;
 
   // Switch to Live mode (if not already)
   this.sendSysex("0e 00");

@@ -36,7 +36,7 @@ function TrackState() {
 }
 
 function ClipLauncherView() {
-  this.view = host.createTrackBank(8, 8, 8);
+  this.view = host.createTrackBank(8, 0, 8);
 
   // Set indications...
   this.view.sceneBank().setIndication(true);

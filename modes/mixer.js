@@ -10,6 +10,7 @@ const MODE_MUTE = 5;
 const MODE_SOLO = 6;
 const MODE_RECORD_ARM = 7;
 const MODE_PADS = [89, 79, 69, 59, 49, 39, 29, 19];
+const FADER_BI = [false, true, false, false];
 
 const CC_MAPS = [
   [21, 22, 23, 24, 25, 26, 27, 28],
@@ -24,17 +25,12 @@ function MixerMode() {
   this.controls = arranger_device.createCursorRemoteControlsPage(8);
   this.vertical = false;
   this.fader_colors = [1, 1, 1, 1, 1, 1, 1, 1]; // Just set it's color to 0 if it isn't useful...
+  this.send_exists = [false, false, false, false, false, false, false, false];
   this.fader_values = [
-    [10, 10, 10, 10, 10, 10, 10, 10],
-    [10, 10, 10, 10, 10, 10, 10, 10],
-    [10, 10, 10, 10, 10, 10, 10, 10],
-    [10, 10, 10, 10, 10, 10, 10, 10],
-  ];
-  this.fader_bi = [
-    [false, false, false, false, false, false, false, false],
-    [true, true, true, true, true, true, true, true],
-    [false, false, false, false, false, false, false, false],
-    [false, false, false, false, false, false, false, false],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
   ];
   this.ignore_flag = [
     [false, false, false, false, false, false, false, false],
@@ -42,6 +38,9 @@ function MixerMode() {
     [false, false, false, false, false, false, false, false],
     [false, false, false, false, false, false, false, false],
   ];
+  this.position = [0, 0, 0, 0];
+  this.max_position = [0, 0, 0, 0];
+
   // Setup callbacks
   let mm = this;
 
@@ -56,11 +55,59 @@ function MixerMode() {
       }
       mm.ignore_flag[MODE_SEND_B][i] = false;
     });
+    this.controls.selectedPageIndex().addValueObserver((csp) => {
+      mm.position[MODE_SEND_B] = csp;
+      host.requestFlush();
+    });
+    this.controls.pageCount().addValueObserver((cic) => {
+      mm.max_position[MODE_SEND_B] = cic;
+      host.requestFlush();
+    });
+  }
+
+  let sendBank = arranger_track.sendBank();
+  sendBank.scrollPosition().addValueObserver((sbsp) => {
+    mm.position[MODE_SEND_A] = sbsp;
+    mm.setupFaders(session);
+    host.requestFlush();
+  });
+  sendBank.itemCount().addValueObserver((sbic) => {
+    mm.max_position[MODE_SEND_A] = sbic;
+    mm.setupFaders(session);
+    host.requestFlush();
+  });
+
+  for(let send = 0; send < 8; send++) {
+    let s = sendBank.getItemAt(send);
+    s.exists().addValueObserver((se) => {
+      // println(`${se} ${send}`);
+      mm.send_exists[send] = se;
+      mm.setupFaders(session);
+      host.requestFlush();
+    });
+    // Send mode callback
+    s.value().addValueObserver((sv) => {
+      if(!mm.ignore_flag[MODE_SEND_A][send]) {
+        mm.fader_values[MODE_SEND_A][send] = sv * 127;
+        mm.sendValues(session);
+        host.requestFlush();
+      }
+      mm.ignore_flag[MODE_SEND_A][send] = false;
+    })
   }
 
   for(let track = 0; track < 8; track++) {
     let t = clip_launcher_view.view.getItemAt(track);
-    // track.color().set(0.5, 1, 0.3);
+    clip_launcher_view.view.channelScrollPosition().addValueObserver((csp) => {
+      mm.position[MODE_VOLUME] = csp;
+      mm.position[MODE_PAN] = csp;
+      host.requestFlush();
+    });
+    clip_launcher_view.view.channelCount().addValueObserver((cic) => {
+      mm.max_position[MODE_VOLUME] = cic;
+      mm.max_position[MODE_PAN] = cic;
+      host.requestFlush();
+    });
     // Color callback
     t.color().addValueObserver((r, g, b) => {
       let color = find_novation_color(r, g, b);
@@ -76,7 +123,7 @@ function MixerMode() {
       }
     });
 
-    // Pan mode callbacks
+    // Pan mode callback
     t.pan().value().addValueObserver((pan) => {
       if(!mm.ignore_flag[MODE_PAN][track]) {
         mm.fader_values[MODE_PAN][track] = pan * 127;
@@ -84,6 +131,16 @@ function MixerMode() {
         host.requestFlush();
       }
       mm.ignore_flag[MODE_PAN][track] = false;
+    });
+
+    // Volume mode callback
+    t.volume().value().addValueObserver((volume) => {
+      if(!mm.ignore_flag[MODE_VOLUME][track]) {
+        mm.fader_values[MODE_VOLUME][track] = volume * 127;
+        mm.sendValues(session);
+        host.requestFlush();
+      }
+      mm.ignore_flag[MODE_VOLUME][track] = false;
     });
   }
 }
@@ -97,13 +154,27 @@ MixerMode.prototype.redraw = function(session) {
   let mode_pad = MODE_PADS[this.mode];
   this.drawCCPulse(session, mode_pad, this.activeColor());
 
-  // Draw arrows depending on the mode and verticalness
+  // Draw arrows depending on the mode, position, max_position and verticalness (only in fader modes)
+  let view_size = (this.mode != MODE_SEND_B ? 8 : 1);
   switch(this.mode) {
-    case MODE_VOLUME:
-    case MODE_PAN:
-    case MODE_SEND_A:
-    case MODE_SEND_B:
-
+    case MODE_VOLUME: // Left and right scroll tracks
+    case MODE_PAN: // Up and Down scroll tracks
+    case MODE_SEND_A: // Left and Right scroll tracks
+    case MODE_SEND_B: // Left and Right switch pages
+      if(this.position[this.mode] > 0) {
+        if(!this.vertical) {
+          this.drawCCSolid(session, 91, this.activeColor());
+        } else {
+          this.drawCCSolid(session, 93, this.activeColor());
+        }
+      }
+      if(this.position[this.mode] + view_size < this.max_position[this.mode]) {
+        if(!this.vertical) {
+          this.drawCCSolid(session, 92, this.activeColor());
+        } else {
+          this.drawCCSolid(session, 94, this.activeColor());
+        }
+      }
       break;
     default:
       break; // Taken care of in CLVM
@@ -148,31 +219,96 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
     let row = parseInt((''+data1)[0], 10);
     println(`[MM] ${status.toString(16)} ${data1} ${data2}`);
     // If it is one of the scene buttons, switch scene modes.
+    let launch = (row != 1 || this.mode <= MODE_SEND_B);
     if(col == 9) {
       this.mode = 8 - row;
       this.switchMode(session);
+    } else if (status == 0xA0) {
+      // Ignore aftertouch
+    } else if (status == 0x90) {
+      switch(this.mode) {
+        case MODE_VOLUME:
+        case MODE_PAN:
+        case MODE_SEND_A:
+        case MODE_SEND_B:
+          this.launchPad();
+          break
+        case MODE_STOP_CLIP:
+          if(row == 1) {
+            clip_launcher_view.view.getItemAt(col - 1).stop();
+          } else {
+            this.launchPad();
+          }
+          break;
+        case MODE_MUTE:
+        case MODE_SOLO:
+        case MODE_RECORD_ARM:
+          if(row == 1) {
+            clip_launcher_view.view.getItemAt(col - 1).arm().toggle();
+          } else {
+            this.launchPad();
+          }
+          break;
+        default:
+          break;
+      }
     } else if (this.mode > MODE_SEND_B) {
       this.operateControls(data1);
+    } else {
+      let back = (!this.vertical ? data1 == 91 : data1 == 93);
+      let forward = (!this.vertical ? data1 == 92 : data1 == 94);
+      switch(this.mode) {
+        case MODE_VOLUME:
+        case MODE_PAN:
+          if(back) {
+            clip_launcher_view.view.scrollBackwards();
+          } else if (forward) {
+            clip_launcher_view.view.scrollForwards();
+          }
+          break;
+        case MODE_SEND_A:
+          break;
+        case MODE_SEND_B:
+          if(back) {
+            this.controls.selectPreviousPage(false);
+          } else if (forward) {
+            this.controls.selectNextPage(false);
+          }
+          break;
+        default:
+          throw new Error("Unreachable");
+      }
     }
   }
 };
 
 MixerMode.prototype.uploadValue = function(mode, index, value) {
+  let val = value / 127;
+  let track = clip_launcher_view.view.getItemAt(index);
+  this.ignore_flag[mode][index] = true;
   switch(mode) {
     case MODE_VOLUME:
+      track.volume().value().set(val);
       break;
     case MODE_PAN:
-      clip_launcher_view.view.getItemAt(index).pan().value().set(value / 127);
-      this.ignore_flag[MODE_PAN][index] = true;
+      track.pan().value().set(val);
       break;
     case MODE_SEND_A:
+      arranger_track.sendBank().getItemAt(index).value().set(val);
+      break;
     case MODE_SEND_B:
+      this.controls.getParameter(index).value().set(val);
+      break;
     default:
       break;
   }
 }
 
 MixerMode.prototype.sendValues = function(session) {
+  if(this.mode > MODE_SEND_B) {
+    // Don't update if not in a fader mode
+    return;
+  }
   // Send the current values we have
   for(let i = 0; i < 8; i++) {
     session.sendMidi(0xB4, CC_MAPS[this.mode][i], this.fader_values[this.mode][i]);
@@ -180,6 +316,26 @@ MixerMode.prototype.sendValues = function(session) {
 }
 
 MixerMode.prototype.setupFaders = function(session) {
+  if(this.mode > MODE_SEND_B) {
+    // Don't update if not in a fader mode
+    return;
+  }
+
+  let colors;
+  switch(this.mode) {
+    case MODE_VOLUME:
+    case MODE_PAN:
+      colors = this.fader_colors;
+      break;
+    case MODE_SEND_A:
+      colors = this.send_exists.map((se) => (se ? 0x1 : 0x0));
+      break;
+    case MODE_SEND_B:
+      colors = [5, 84, 13, 21, 29, 37, 53, 57];
+      break;
+    default:
+      break;
+  }
   // Setup Faders
   let command = "0100";
   if(this.vertical) {
@@ -189,20 +345,21 @@ MixerMode.prototype.setupFaders = function(session) {
   }
 
   for(let i = 0; i < 8; i++) {
-    let colorString = ("0" + this.fader_colors[i].toString(16)).substr(-2);
+    let colorString = ("0" + colors[i].toString(16)).substr(-2);
     let type;
-    if(this.fader_bi[this.mode][i]) {
+    if(FADER_BI[this.mode]) {
       type = "01";
     } else {
       type = "00";
     }
     let cc = ("0" + CC_MAPS[this.mode][i].toString(16)).substr(-2);
     let index = ("0" + i.toString(16)).substr(-2);
-    println(`${index} ${type} ${cc} ${colorString} ${this.fader_colors[i].toString(16)} ${this.fader_colors[i]}`);
+    // println(`${index} ${type} ${cc} ${colorString} ${this.fader_colors[i].toString(16)} ${this.fader_colors[i]}`);
     command += (index + type + cc + colorString);
   }
 
   session.sendSysex(command);
+  this.sendValues(session);
 };
 
 // Switch to fader mode (if not already) if in Volume, Pan, Send, or Controls Mode
@@ -229,8 +386,6 @@ MixerMode.prototype.switchMode = function(session) {
   if(this.mode <= MODE_SEND_B) {
     this.setupFaders(session);
     session.sendSysex("00 0D");
-
-    this.sendValues(session);
   } else {
     session.sendSysex("00 00");
   }

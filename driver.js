@@ -2,8 +2,7 @@ var session, modes, drumpad_mode, mode_index;
 var on_session = true;
 var arranger_device, arranger_track;
 var clip_launcher_view;
-var note_input;
-var recording_active;
+var recording_active, ra_behavior;
 
 function init() {
   // Transport access
@@ -12,11 +11,12 @@ function init() {
   session.setCallbacks(onMidi0, onSysex0, onMidi1, onSysex1);
 
   // Initalize helper objects
-  arranger_track = host.createCursorTrack(0, 0);
+  arranger_track = host.createCursorTrack(8, 0);
   arranger_device = arranger_track.createCursorDevice("0", "First Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
-  note_input = session.daw_in.createNoteInput("System", "9???00", "A???00", "D???00");
-  note_input.setShouldConsumeEvents(false);
   clip_launcher_view = new ClipLauncherView();
+  arranger_track.hasNext().markInterested();
+  let preferences = host.getPreferences();
+  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Global Record", "Cycle Selection"], "Toggle Global Record");
 
   // Initialize modes
   modes = [new SessionViewMode(), new MixerMode()];
@@ -70,8 +70,21 @@ function onMidi0(status, data1, data2) {
         on_session = false;
         modes[mode_index].onLeave(session);
         break;
-      case 98: // Record was pressed
-        transport.isArrangerRecordEnabled().toggle();
+      case 98: // Record was pressed (cycle selected track if on, else turn on)
+        switch(ra_behavior.get()) {
+          case "Toggle Global Record":
+            transport.isArrangerRecordEnabled().toggle();
+            break;
+          case "Cycle Selection":
+            if(arranger_track.hasNext().get()) {
+              arranger_track.selectNext();
+            } else {
+              arranger_track.selectFirst();
+            }
+            break;
+          default:
+            host.errorln(`Unhandled option ${ra_behavior.get()}`)
+        }
         break;
       default: // Noop
         break;
