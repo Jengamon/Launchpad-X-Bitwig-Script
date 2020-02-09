@@ -1,6 +1,15 @@
 // A Session view mode.
 function SessionViewMode() {
   Mode.prototype.initialize.call(this);
+
+  this.scene_colors = [0, 0, 0, 0, 0, 0, 0, 0];
+  let svm = this;
+  for(let scene = 0; scene < 8; scene++) {
+    clip_launcher_view.view.sceneBank().getItemAt(scene).color().addValueObserver((r, g, b) => {
+      svm.scene_colors[scene] = find_novation_color(r, g, b);
+      host.requestFlush();
+    });
+  }
 }
 
 SessionViewMode.prototype = Object.create(Mode.prototype);
@@ -10,6 +19,11 @@ SessionViewMode.prototype.activeColor = function() { return 0x54; }
 SessionViewMode.prototype.redraw = function(session) {
   // Draw the entire clip launcher view.
   clip_launcher_view.draw(session, this, BRM_NORMAL, true);
+
+  for(let i = 0; i < 8; i++) {
+    let pad = (8 - i) * 10 + 9;
+    this.drawCCSolid(session, pad, this.scene_colors[i]);
+  }
 
   this.clearUnused(session);
 };
