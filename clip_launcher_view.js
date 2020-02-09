@@ -206,7 +206,7 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
         if(ts.exists) {
-          if(ts.mute) {
+          if(ts.solo) {
             mode.drawSolid(session, 7, j, SOLO_ON_COLOR);
           } else {
             mode.drawSolid(session, 7, j, SOLO_OFF_COLOR);
