@@ -227,28 +227,28 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
           if(row == 1) {
             clip_launcher_view.view.getItemAt(col - 1).stop();
           } else {
-            this.launchPad();
+            this.launchPad(data1);
           }
           break;
         case MODE_MUTE:
           if(row == 1) {
             clip_launcher_view.view.getItemAt(col - 1).mute().toggle();
           } else {
-            this.launchPad();
+            this.launchPad(data1);
           }
           break;
         case MODE_SOLO:
           if(row == 1) {
             clip_launcher_view.view.getItemAt(col - 1).solo().toggle();
           } else {
-            this.launchPad();
+            this.launchPad(data1);
           }
           break;
         case MODE_RECORD_ARM:
           if(row == 1) {
             clip_launcher_view.view.getItemAt(col - 1).arm().toggle();
           } else {
-            this.launchPad();
+            this.launchPad(data1);
           }
           break;
         default:
