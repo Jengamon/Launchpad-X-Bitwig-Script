@@ -11,6 +11,7 @@ const MODE_SOLO = 6;
 const MODE_RECORD_ARM = 7;
 const MODE_PADS = [89, 79, 69, 59, 49, 39, 29, 19];
 const FADER_BI = [false, true, false, false];
+const EPSILON = 0.05;
 
 const CC_MAPS = [
   [21, 22, 23, 24, 25, 26, 27, 28],
@@ -45,13 +46,14 @@ function MixerMode() {
   let mm = this;
 
   let update_mode_value = (mode, i, value) => {
+    // If the delta is large enough, send it.
+    if(Math.abs(mm.fader_values[mode][i] - value) > EPSILON && mm.ignore_flag[mode][i]) {
+      mm.ignore_flag[mode][i] = false;
+    }
+    mm.fader_values[mode][i] = value;
     if(!mm.ignore_flag[mode][i]) {
-      mm.fader_values[mode][i] = value;
       mm.sendValues(session);
       host.requestFlush();
-    }
-    if(Math.abs(mm.fader_values[mode][i] - value) > 0.05 && mm.ignore_flag[mode][i]) {
-      mm.ignore_flag[mode][i] = false;
     }
   }
 
