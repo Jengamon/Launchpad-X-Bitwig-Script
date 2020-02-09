@@ -190,8 +190,13 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
           let ccs = CC_MAPS[mode];
           let index = ccs.indexOf(data1);
           if(index != -1) {
-            this.fader_values[mode][index] = data2 / 127;
-            this.uploadValue(mode, index, data2 / 127);
+            let value = data2 / 127;
+            if(Math.abs(value - 0.5) <= 0.02) {
+              value = 0.5;
+            } // Nudge value to .5 if reasonable
+            // println(`FADER ${index}: ${value}`)
+            this.fader_values[mode][index] = value;
+            this.uploadValue(mode, index, value);
           }
         }
         break;
