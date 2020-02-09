@@ -18,7 +18,7 @@ function init() {
   arranger_track.hasNext().markInterested();
   arranger_track.trackType().markInterested();
   let preferences = host.getPreferences();
-  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Global Record", "Cycle Selection"], "Toggle Global Record");
+  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
 
   // Initialize modes
@@ -38,7 +38,7 @@ function init() {
 
   // Record button drawing
   recording_active = false;
-  transport.isArrangerRecordEnabled().addValueObserver((re) => {
+  transport.isClipLauncherOverdubEnabled().addValueObserver((re) => {
     recording_active = re;
     host.requestFlush();
   });
@@ -75,8 +75,8 @@ function onMidi0(status, data1, data2) {
         break;
       case 98: // Record was pressed (cycle selected track if on, else turn on)
         switch(ra_behavior.get()) {
-          case "Toggle Global Record":
-            transport.isArrangerRecordEnabled().toggle();
+          case "Toggle Launcher Overdub":
+            transport.isClipLauncherOverdubEnabled().toggle();
             break;
           case "Cycle Selection":
             if(arranger_track.hasNext().get()) {
