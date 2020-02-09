@@ -4,7 +4,7 @@ loadAPI(10);
 // This is useful during development.
 host.setShouldFailOnDeprecatedUse(true);
 
-host.defineController("Novation", "Launchpad X", "0.1", "92a7c5e4-47ca-4219-b9ea-5899cedbe1a8", "Jengamon");
+host.defineController("Novation", "Launchpad X", "1.0", "92a7c5e4-47ca-4219-b9ea-5899cedbe1a8", "Jengamon");
 
 host.defineMidiPorts(2, 2);
 
