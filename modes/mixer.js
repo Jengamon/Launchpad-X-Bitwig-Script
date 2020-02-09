@@ -217,7 +217,7 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
   } else if(data2 > 0) { // On press
     let col = parseInt((''+data1)[1], 10);
     let row = parseInt((''+data1)[0], 10);
-    println(`[MM] ${status.toString(16)} ${data1} ${data2}`);
+    // println(`[MM] ${status.toString(16)} ${data1} ${data2}`);
     // If it is one of the scene buttons, switch scene modes.
     let launch = (row != 1 || this.mode <= MODE_SEND_B);
     if(col == 9) {
