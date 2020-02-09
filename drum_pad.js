@@ -1,0 +1,167 @@
+load("./drum_pad/pad_helper.js");
+
+const RECORDING_COLOR = 0x5;
+const NORMAL_COLOR = 0x1;
+
+// Manages drumpad messages and if the cursor device is a drum pad.
+function DrumPadMode() {
+  Mode.prototype.initialize(this);
+
+  println(arranger_device);
+  this.dp_bank = arranger_device.createDrumPadBank(64);
+  this.dp_bank.setIndication(true);
+  this.dp_bank.channelScrollPosition().markInterested();
+  this.dp_bank.hasSoloedPads().markInterested();
+
+  this.helpers = [];
+  for(let i = 0; i < 4; i++) {
+    this.helpers.push(new PadHelper(this, 16 * i));
+  }
+
+  this.pressed = {};
+
+  this.midi_channel = 0;
+
+  this.recording_active = false;
+  let mm = this;
+  transport.isArrangerRecordEnabled().addValueObserver((re) => {
+    mm.recording_active = re;
+    host.requestFlush();
+  });
+
+  session.sendSysex("16");
+}
+
+DrumPadMode.prototype = Object.create(Mode.prototype);
+
+DrumPadMode.prototype.drawSolid = function(session, pad, color) {
+  session.sendMidi(0x98, pad, color);
+  this.except.push(pad);
+};
+
+DrumPadMode.prototype.drawFlash = function(session, pad, color) {
+  session.sendMidi(0x99, pad, color);
+  this.except.push(pad);
+};
+
+DrumPadMode.prototype.drawPulse = function(session, pad, color) {
+  session.sendMidi(0x9A, pad, color);
+  this.except.push(pad);
+};
+
+DrumPadMode.prototype._allPads = function() {
+  let list = [];
+  for(let i = 36; i < 100; i++) {
+    list.push(i);
+  }
+  return list;
+};
+
+DrumPadMode.prototype.clearPad = function(session, pad) {
+  session.sendMidi(0x98, pad, 0);
+  session.sendMidi(0x99, pad, 0);
+  session.sendMidi(0x9A, pad, 0);
+};
+
+DrumPadMode.prototype.onMidiIn = function(session, status, data1, data2) {
+  if(status != 0xB0) {
+    // We do have to convert from pad number to note number.
+    let nn = this.dp_bank.channelScrollPosition().get() + (data1 - 36);
+    //let midi_command = status ^ 0x8;
+    // We add 12 because at scroll position 0, we are at MIDI note C1
+    println(`[DPM] ${nn} ${(status ^ 0x8 | this.midi_channel).toString(16)} ${data2}`)
+    // session.sendMidi(0x9F, 60, data2);
+    note_input.sendRawMidiEvent(status ^ 0x8 | this.midi_channel, nn, data2);
+    this.pressed[data1] = data2 > 0;
+  } else {
+    // An arrow was pressed! Adjust the scroll window.
+    // But keep the 64 notes in view (the position cannot increase above E3 == 62)
+    let key = data1 - 91;
+    if(data2 > 0) {
+      switch(key) {
+        case 0:
+          if(this.canIncreaseBy(16)) {
+            this.dp_bank.channelScrollPosition().inc(16);
+          }
+          break;
+        case 1:
+          if(this.canDecreaseBy(16)) {
+            this.dp_bank.channelScrollPosition().inc(-16);
+          }
+          break;
+        case 2:
+          if(this.canDecreaseBy(4)) {
+            this.dp_bank.channelScrollPosition().inc(-4);
+          }
+          break;
+        case 3:
+          if(this.canIncreaseBy(4)) {
+            this.dp_bank.channelScrollPosition().inc(4);
+          }
+          break;
+        default:
+          println(`Unhandled key ${key} (${key + 91})`);
+          break;
+      }
+    }
+  }
+
+  session.sendSysex("16");
+};
+
+DrumPadMode.prototype.canIncreaseBy = function(by) {
+  return (this.dp_bank.channelScrollPosition().get() + by) <= 66;
+}
+
+DrumPadMode.prototype.canDecreaseBy = function(by) {
+  return (this.dp_bank.channelScrollPosition().get() - by) >= 0;
+}
+
+DrumPadMode.prototype.onSysexIn = function(session, sysex) {
+  let command = sysex.command.hexByteAt(0);
+  switch(command) {
+    case 0x16: // Note mode config
+      // Set the channel properly
+      this.midi_channel = sysex.data.hexByteAt(3);
+      break;
+    default:
+      // If we don't know the command, then the session mode should.
+      println(`[DPM] Unknown SYSEX command ${command.toString(16)}: ${sysex.data}`);
+      break;
+  }
+};
+
+DrumPadMode.prototype.redraw = function(session) {
+  let anySoloed = this.dp_bank.hasSoloedPads().get();
+  for(let i = 0; i < 4; i++) {
+    let helper = this.helpers[i];
+    let except = [];
+    for(let j = 0; j < 16; j++) {
+      let pad = helper.getPadNumber(j);
+      if(this.pressed[pad] && helper.isValid(j, anySoloed)) {
+        if(this.recording_active) {
+          this.drawSolid(session, pad, RECORDING_COLOR);
+        } else {
+          this.drawSolid(session, pad, NORMAL_COLOR);
+        }
+        except.push(j);
+      }
+    }
+    helper.draw(session, this, except, anySoloed);
+  }
+
+  if(this.canIncreaseBy(16)) {
+    this.drawCCSolid(session, 91, 13);
+  }
+  if(this.canIncreaseBy(4)) {
+    this.drawCCSolid(session, 94, 13);
+  }
+  if(this.canDecreaseBy(16)) {
+    this.drawCCSolid(session, 92, 13);
+  }
+  if(this.canDecreaseBy(4)) {
+    this.drawCCSolid(session, 93, 13);
+  }
+
+  this.clearUnused(session);
+};
