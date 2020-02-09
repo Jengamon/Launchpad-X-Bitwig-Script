@@ -23,13 +23,6 @@ function DrumPadMode() {
 
   this.midi_channel = 0;
 
-  this.recording_active = false;
-  let mm = this;
-  transport.isArrangerRecordEnabled().addValueObserver((re) => {
-    mm.recording_active = re;
-    host.requestFlush();
-  });
-
   session.sendSysex("16");
 }
 
@@ -145,7 +138,7 @@ DrumPadMode.prototype.redraw = function(session) {
       let pad = helper.getPadNumber(j);
 
       if((/*this.pressed[pad] ||*/ arranger_track.playingNotes().isNotePlaying(this.toNote(pad))) && helper.isValid(j, anySoloed)) {
-        if(this.recording_active) {
+        if(recording_active) {
           this.drawSolid(session, pad, RECORDING_COLOR);
         } else {
           this.drawSolid(session, pad, NORMAL_COLOR);
