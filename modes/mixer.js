@@ -340,7 +340,7 @@ MixerMode.prototype.setupFaders = function(session) {
       colors = this.fader_colors;
       break;
     case MODE_SEND_A:
-      colors = this.send_exists.map((se) => (se ? 0x1 : 0x0));
+      colors = this.send_exists.map((se) => (se ? 0x3 : 0x0));
       break;
     case MODE_SEND_B:
       colors = [5, 84, 13, 21, 29, 37, 53, 57];
