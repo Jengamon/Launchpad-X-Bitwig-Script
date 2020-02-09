@@ -13,6 +13,6 @@ There are some changes, which I probably should document, but nahhh for now.
 This script is much cleaner than my Mini Mk3 script. I might port over the Mk3
 to this framework, but we'll see.
 
-# TODO
+## TODO
 
 - Add Mac and Linux autodetection (maybes take this from DrivenByMoss?)
