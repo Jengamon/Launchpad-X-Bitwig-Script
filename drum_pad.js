@@ -69,7 +69,14 @@ DrumPadMode.prototype.onMidiIn = function(session, status, data1, data2) {
     // We add 12 because at scroll position 0, we are at MIDI note C1
     // println(`[DPM] ${nn} ${(status ^ 0x8 | this.midi_channel).toString(16)} ${data2}`)
     // session.sendMidi(0x9F, 60, data2);
-    session. note_input.sendRawMidiEvent(status ^ 0x8 | this.midi_channel, nn, data2);
+    // Only send notes on valid pads
+    let valid = false;
+    let id = (data1 - 36);
+    let helper = this.helpers[Math.floor(id / 16)];
+    let hid = id - helper.offset;
+    if(helper.isValid(hid)) {
+      session.note_input.sendRawMidiEvent(status ^ 0x8 | this.midi_channel, nn, data2);
+    }
     // this.pressed[data1] = data2 > 0;
   } else {
     // An arrow was pressed! Adjust the scroll window.
