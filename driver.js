@@ -3,6 +3,7 @@ var on_session = true;
 var arranger_device, arranger_track;
 var clip_launcher_view;
 var recording_active, ra_behavior;
+var follow_pref;
 
 function init() {
   // Transport access
@@ -18,7 +19,8 @@ function init() {
   arranger_track.trackType().markInterested();
   let preferences = host.getPreferences();
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Global Record", "Cycle Selection"], "Toggle Global Record");
-
+  follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
+  
   // Initialize modes
   modes = [new SessionViewMode(), new MixerMode()];
   mode_index = 0;

@@ -38,6 +38,32 @@ function TrackState() {
 function ClipLauncherView() {
   this.view = host.createTrackBank(8, 0, 8);
 
+  let clv = this;
+
+  this.track_pos = 0;
+  this.max_tracks = 0;
+  this.scene_pos = 0;
+  this.max_scenes = 0;
+  this.view.channelScrollPosition().addValueObserver((csp) => {
+    let scsp = Math.max(Math.min(clv.max_tracks - 8, csp), 0);
+    if(scsp != csp) {
+      clv.view.channelScrollPosition().set(scsp);
+    } else {
+      clv.track_pos = scsp;
+    }
+  });
+  this.view.channelCount().addValueObserver((cc) => { clv.max_tracks = cc; });
+  this.view.sceneBank().scrollPosition().addValueObserver((sbci) => { clv.scene_pos = sbci; });
+  this.view.sceneBank().itemCount().addValueObserver((sbic) => { clv.max_scenes = sbic; });
+
+  // Follow the main selected track
+  arranger_track.position().addValueObserver((pos) => {
+    let psp;
+    if(follow_pref.get()) {
+      clv.view.scrollIntoView(pos);
+    }
+  });
+
   // Set indications...
   this.view.sceneBank().setIndication(true);
   for(let i = 0; i < 8; i++) {
@@ -76,16 +102,6 @@ function ClipLauncherView() {
 
     this.track_states.push(ts);
   }
-
-  this.track_pos = 0;
-  this.max_tracks = 0;
-  this.scene_pos = 0;
-  this.max_scenes = 0;
-  let clv = this;
-  this.view.channelScrollPosition().addValueObserver((csp) => { clv.track_pos = csp; });
-  this.view.channelCount().addValueObserver((cc) => { clv.max_tracks = cc; });
-  this.view.sceneBank().scrollPosition().addValueObserver((sbci) => { clv.scene_pos = sbci; });
-  this.view.sceneBank().itemCount().addValueObserver((sbic) => { clv.max_scenes = sbic; });
 }
 
 ClipLauncherView.prototype.generate = function(row, col, session, mode) {

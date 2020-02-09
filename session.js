@@ -67,7 +67,7 @@ Session.prototype.shutdown = function() {
 // Bitwig has a weird thing where it seems to buffer MIDI/Sysex output,
 // so to force it to send messages, we just fill the buffer with trash
 Session.prototype.forceSend = function() {
-  for(let i = 0; i < 100; i++) {
+  for(let i = 0; i < 50; i++) {
     this.sendMidi(0, 0, 0);
   }
 }
