@@ -44,17 +44,21 @@ function MixerMode() {
   // Setup callbacks
   let mm = this;
 
+  let update_mode_value = (mode, i, value) => {
+    if(!mm.ignore_flag[mode][i]) {
+      mm.fader_values[mode][i] = value;
+      mm.sendValues(session);
+      host.requestFlush();
+    }
+    if(Math.abs(mm.fader_values[mode][i] - value) > 0.05 && mm.ignore_flag[mode][i]) {
+      mm.ignore_flag[mode][i] = false;
+    }
+  }
+
   for(let i = 0; i < 8; i++) {
     let param = this.controls.getParameter(i);
     param.setIndication(true);
-    param.value().addValueObserver((control) => {
-      if(!mm.ignore_flag[MODE_SEND_B][i]) {
-        mm.fader_values[MODE_SEND_B][i] = control * 127;
-        mm.sendValues(session);
-        host.requestFlush();
-      }
-      mm.ignore_flag[MODE_SEND_B][i] = false;
-    });
+    param.value().addValueObserver((control) => update_mode_value(MODE_SEND_B, i, control));
     this.controls.selectedPageIndex().addValueObserver((csp) => {
       mm.position[MODE_SEND_B] = csp;
       host.requestFlush();
@@ -86,14 +90,7 @@ function MixerMode() {
       host.requestFlush();
     });
     // Send mode callback
-    s.value().addValueObserver((sv) => {
-      if(!mm.ignore_flag[MODE_SEND_A][send]) {
-        mm.fader_values[MODE_SEND_A][send] = sv * 127;
-        mm.sendValues(session);
-        host.requestFlush();
-      }
-      mm.ignore_flag[MODE_SEND_A][send] = false;
-    })
+    s.value().addValueObserver((sv) => update_mode_value(MODE_SEND_A, send, sv));
   }
 
   for(let track = 0; track < 8; track++) {
@@ -115,7 +112,7 @@ function MixerMode() {
         case MODE_VOLUME:
         case MODE_PAN:
           mm.fader_colors[track] = color;
-          mm.setupFaders(session);
+          mm.sendColors(session);
           host.requestFlush();
           break;
         default:
@@ -124,24 +121,10 @@ function MixerMode() {
     });
 
     // Pan mode callback
-    t.pan().value().addValueObserver((pan) => {
-      if(!mm.ignore_flag[MODE_PAN][track]) {
-        mm.fader_values[MODE_PAN][track] = pan * 127;
-        mm.sendValues(session);
-        host.requestFlush();
-      }
-      mm.ignore_flag[MODE_PAN][track] = false;
-    });
+    t.pan().value().addValueObserver((pan) => update_mode_value(MODE_PAN, track, pan));
 
     // Volume mode callback
-    t.volume().value().addValueObserver((volume) => {
-      if(!mm.ignore_flag[MODE_VOLUME][track]) {
-        mm.fader_values[MODE_VOLUME][track] = volume * 127;
-        mm.sendValues(session);
-        host.requestFlush();
-      }
-      mm.ignore_flag[MODE_VOLUME][track] = false;
-    });
+    t.volume().value().addValueObserver((volume) => update_mode_value(MODE_VOLUME, track, volume));
   }
 }
 
@@ -205,8 +188,8 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
           let ccs = CC_MAPS[mode];
           let index = ccs.indexOf(data1);
           if(index != -1) {
-            this.fader_values[mode][index] = data2;
-            this.uploadValue(mode, index, data2);
+            this.fader_values[mode][index] = data2 / 127;
+            this.uploadValue(mode, index, data2 / 127);
           }
         }
         break;
@@ -223,7 +206,7 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
     if(col == 9) {
       this.mode = 8 - row;
       this.switchMode(session);
-    } else if (status == 0xA0) {
+    //} else if (status == 0xA0) {
       // Ignore aftertouch
     } else if (status == 0x90) {
       switch(this.mode) {
@@ -295,21 +278,20 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
 };
 
 MixerMode.prototype.uploadValue = function(mode, index, value) {
-  let val = value / 127;
   let track = clip_launcher_view.view.getItemAt(index);
   this.ignore_flag[mode][index] = true;
   switch(mode) {
     case MODE_VOLUME:
-      track.volume().value().set(val);
+      track.volume().value().set(value);
       break;
     case MODE_PAN:
-      track.pan().value().set(val);
+      track.pan().value().set(value);
       break;
     case MODE_SEND_A:
-      arranger_track.sendBank().getItemAt(index).value().set(val);
+      arranger_track.sendBank().getItemAt(index).value().set(value);
       break;
     case MODE_SEND_B:
-      this.controls.getParameter(index).value().set(val);
+      this.controls.getParameter(index).value().set(value);
       break;
     default:
       break;
@@ -323,16 +305,23 @@ MixerMode.prototype.sendValues = function(session) {
   }
   // Send the current values we have
   for(let i = 0; i < 8; i++) {
-    session.sendMidi(0xB4, CC_MAPS[this.mode][i], this.fader_values[this.mode][i]);
+    session.sendMidi(0xB4, CC_MAPS[this.mode][i], Math.round(this.fader_values[this.mode][i] * 127));
   }
 }
 
-MixerMode.prototype.setupFaders = function(session) {
+MixerMode.prototype.sendColors = function(session) {
   if(this.mode > MODE_SEND_B) {
     // Don't update if not in a fader mode
     return;
   }
+  let colors = this.faderColors();
+  // Send the current values we have
+  for(let i = 0; i < 8; i++) {
+    session.sendMidi(0xB5, CC_MAPS[this.mode][i], colors[i]);
+  }
+};
 
+MixerMode.prototype.faderColors = function() {
   let colors;
   switch(this.mode) {
     case MODE_VOLUME:
@@ -348,6 +337,16 @@ MixerMode.prototype.setupFaders = function(session) {
     default:
       break;
   }
+  return colors;
+};
+
+MixerMode.prototype.setupFaders = function(session) {
+  if(this.mode > MODE_SEND_B) {
+    // Don't update if not in a fader mode
+    return;
+  }
+
+  // let colors = this.faderColors();
   // Setup Faders
   let command = "0100";
   if(this.vertical) {
@@ -357,7 +356,7 @@ MixerMode.prototype.setupFaders = function(session) {
   }
 
   for(let i = 0; i < 8; i++) {
-    let colorString = ("0" + colors[i].toString(16)).substr(-2);
+    let colorString = "00";
     let type;
     if(FADER_BI[this.mode]) {
       type = "01";
@@ -372,6 +371,7 @@ MixerMode.prototype.setupFaders = function(session) {
 
   session.sendSysex(command);
   this.sendValues(session);
+  this.sendColors(session);
 };
 
 // Switch to fader mode (if not already) if in Volume, Pan, Send, or Controls Mode

@@ -20,7 +20,7 @@ function init() {
   let preferences = host.getPreferences();
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Global Record", "Cycle Selection"], "Toggle Global Record");
   follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
-  
+
   // Initialize modes
   modes = [new SessionViewMode(), new MixerMode()];
   mode_index = 0;
