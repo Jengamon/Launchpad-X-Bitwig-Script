@@ -14,6 +14,26 @@ function DrumPadMode() {
   this.dp_bank.hasSoloedPads().markInterested();
   arranger_track.playingNotes().markInterested();
 
+  // Add arranger track note forwarding
+  arranger_track.playingNotes().addValueObserver((note_array) => {
+    // Convert note_array into a more reasonable form
+    let notes = {};
+    
+    for(let i = 0; i < note_array.length; i++) {
+      let note = note_array[i];
+      notes[note.pitch()] = note.velocity();
+    }
+
+    // Send the MIDI externally
+    for(let i = 0; i < 128; i++) {
+      if(notes[i] && notes[i] > 0) {
+        session.sendMidi(0x9F, i, notes[i]);
+      } else {
+        session.sendMidi(0x8F, i, 0);
+      }
+    }
+  });
+
   this.helpers = [];
   for(let i = 0; i < 4; i++) {
     this.helpers.push(new PadHelper(this, 16 * i));
