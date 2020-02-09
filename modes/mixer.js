@@ -25,7 +25,7 @@ function MixerMode() {
   this.mode = 0; // Default to mixer volume mode
   this.controls = arranger_device.createCursorRemoteControlsPage(8);
   this.vertical = false;
-  this.fader_colors = [1, 1, 1, 1, 1, 1, 1, 1]; // Just set it's color to 0 if it isn't useful...
+  this.fader_colors = [0, 0, 0, 0, 0, 0, 0, 0]; // Just set it's color to 0 if it isn't useful...
   this.send_exists = [false, false, false, false, false, false, false, false];
   this.fader_values = [
     [0, 0, 0, 0, 0, 0, 0, 0],
