@@ -30,6 +30,7 @@ function MixerMode() {
   this.vertical = false;
   this.fader_colors = [0, 0, 0, 0, 0, 0, 0, 0]; // Just set it's color to 0 if it isn't useful...
   this.send_exists = [false, false, false, false, false, false, false, false];
+  this.track_active = [false, false, false, false, false, false, false, false];
   this.fader_values = [
     [0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -137,7 +138,7 @@ function MixerMode() {
       }
     });
 
-    t.isActivated().markInterested();
+    t.isActivated().addValueObserver((act) => { mm.track_active[track] = act; mm.sendColors(session); host.requestFlush(); });
 
     // Pan mode callback
     t.pan().value().addValueObserver((pan) => update_mode_value(MODE_PAN, track, pan));
@@ -372,9 +373,9 @@ MixerMode.prototype.faderColors = function() {
   switch(this.mode) {
     case MODE_VOLUME:
     case MODE_PAN:
-      colors = this.fader_colors;
+      colors = this.fader_colors.slice(); // Get a copy, not the original
       for(let i = 0; i < 8; i++) {
-        if(!mixer_view.getItemAt(i).isActivated().get()) {
+        if(!this.track_active[i]) {
           colors[i] = 0;
         }
       }
