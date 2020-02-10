@@ -179,6 +179,30 @@ MixerMode.prototype.onDeactivate = function(session) {
   session.sendSysex("00 00");
 }
 
+MixerMode.prototype.modeAction = function(at) {
+  switch(this.mode) {
+    case MODE_VOLUME:
+    case MODE_PAN:
+    case MODE_SEND_A:
+    case MODE_SEND_B:
+      break; // Noop
+    case MODE_STOP_CLIP:
+      clip_launcher_view.view.getItemAt(at).stop();
+      break;
+    case MODE_MUTE:
+      clip_launcher_view.view.getItemAt(at).mute().toggle();
+      break;
+    case MODE_SOLO:
+      clip_launcher_view.view.getItemAt(at).solo().toggle();
+      break;
+    case MODE_RECORD_ARM:
+      clip_launcher_view.view.getItemAt(at).arm().toggle();
+      break;
+    default:
+      break; // Noop
+  }
+}
+
 MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
   if(status == 0xb4) { // Fader change
     switch(this.mode) {
@@ -212,7 +236,14 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
     // If it is one of the scene buttons, switch scene modes.
     let launch = (row != 1 || this.mode <= MODE_SEND_B);
     if(col == 9) {
-      this.mode = 8 - row;
+      let new_mode = 8 - row;
+      if(new_mode == this.mode) {
+        // Do the action for everything in the view
+        for(let i = 0; i < 8; i++) {
+          this.modeAction(i);
+        }
+      }
+      this.mode = new_mode;
       this.switchMode(session);
     //} else if (status == 0xA0) {
       // Ignore aftertouch
@@ -225,29 +256,11 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
           this.launchPad();
           break
         case MODE_STOP_CLIP:
-          if(row == 1) {
-            clip_launcher_view.view.getItemAt(col - 1).stop();
-          } else {
-            this.launchPad(data1);
-          }
-          break;
         case MODE_MUTE:
-          if(row == 1) {
-            clip_launcher_view.view.getItemAt(col - 1).mute().toggle();
-          } else {
-            this.launchPad(data1);
-          }
-          break;
         case MODE_SOLO:
-          if(row == 1) {
-            clip_launcher_view.view.getItemAt(col - 1).solo().toggle();
-          } else {
-            this.launchPad(data1);
-          }
-          break;
         case MODE_RECORD_ARM:
           if(row == 1) {
-            clip_launcher_view.view.getItemAt(col - 1).arm().toggle();
+            this.modeAction(col - 1);
           } else {
             this.launchPad(data1);
           }
