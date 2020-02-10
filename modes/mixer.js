@@ -14,7 +14,7 @@ const FADER_BI = [false, true, false, false];
 const EPSILON = 0.05;
 
 // Globals
-var mixer_clip_launcher_view;
+var mixer_view;
 
 const CC_MAPS = [
   [21, 22, 23, 24, 25, 26, 27, 28],
@@ -45,7 +45,7 @@ function MixerMode() {
   this.position = [0, 0, 0, 0];
   this.max_position = [0, 0, 0, 0];
 
-  mixer_clip_launcher_view = new ClipLauncherView(false);
+  mixer_view = host.createTrackBank(8, 0, 8, false);
 
   // Setup callbacks
   let mm = this;
@@ -104,13 +104,13 @@ function MixerMode() {
   }
 
   for(let track = 0; track < 8; track++) {
-    let t = mixer_clip_launcher_view.view.getItemAt(track);
-    mixer_clip_launcher_view.view.channelScrollPosition().addValueObserver((csp) => {
+    let t = mixer_view.getItemAt(track);
+    mixer_view.channelScrollPosition().addValueObserver((csp) => {
       mm.position[MODE_VOLUME] = csp;
       mm.position[MODE_PAN] = csp;
       host.requestFlush();
     });
-    mixer_clip_launcher_view.view.channelCount().addValueObserver((cic) => {
+    mixer_view.channelCount().addValueObserver((cic) => {
       mm.max_position[MODE_VOLUME] = cic;
       mm.max_position[MODE_PAN] = cic;
       host.requestFlush();
@@ -298,9 +298,9 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
         case MODE_VOLUME:
         case MODE_PAN:
           if(back) {
-            mixer_clip_launcher_view.view.scrollBackwards();
+            mixer_view.scrollBackwards();
           } else if (forward) {
-            mixer_clip_launcher_view.view.scrollForwards();
+            mixer_view.scrollForwards();
           }
           break;
         case MODE_SEND_A:
@@ -320,7 +320,7 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
 };
 
 MixerMode.prototype.uploadValue = function(mode, index, value) {
-  let track = mixer_clip_launcher_view.view.getItemAt(index);
+  let track = mixer_view.getItemAt(index);
   this.ignore_flag[mode][index] = true;
   switch(mode) {
     case MODE_VOLUME:
