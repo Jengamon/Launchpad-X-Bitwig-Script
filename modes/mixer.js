@@ -42,7 +42,6 @@ function MixerMode() {
     [false, false, false, false, false, false, false, false],
     [false, false, false, false, false, false, false, false],
   ];
-  this.group_track_id = [null, null, null, null, null, null, null, null];
   this.position = [0, 0, 0, 0];
   this.max_position = [0, 0, 0, 0];
 
@@ -51,22 +50,17 @@ function MixerMode() {
   // Setup callbacks
   let mm = this;
 
-  let update_mode_value = (mode, i, value, _ri) => {
-    let ri = _ri || {id: -1, count: 0};
-    let riid = (ri.id != -1 ? ri.id : i);
-    let ignore = mm.ignore_flag[mode][riid];
-    if(riid != i) {
-      return;
-    }
-    println(`Called ${mode} ${i} ${JSON.stringify(ri)} ${value} ${mm.fader_values[mode][riid]} ${ignore}`);
+  let update_mode_value = (mode, i, value) => {
+    let ignore = mm.ignore_flag[mode][i];
+    // println(`Called ${mode} ${i} ${value} ${mm.fader_values[mode][i]} ${ignore}`);
     if(!ignore) {
-      mm.fader_values[mode][riid] = value;
+      mm.fader_values[mode][i] = value;
       mm.sendValues(session);
       host.requestFlush();
     }
     // If the delta is large enough, stop ignoring it iff we are a master
-    if(Math.abs(mm.fader_values[mode][riid] - value) > EPSILON && i == riid) {
-      mm.ignore_flag[mode][riid] = false;
+    if(Math.abs(mm.fader_values[mode][i] - value) > EPSILON) {
+      mm.ignore_flag[mode][i] = false;
     }
   }
 
@@ -136,11 +130,18 @@ function MixerMode() {
       }
     });
 
+    t.exists().addValueObserver((exists) => {
+      if(!exists) {
+        mm.fader_colors[MODE_PAN][track] = 0;
+        mm.fader_colors[MODE_VOLUME][track] = 0;
+      }
+    });
+
     // Pan mode callback
-    t.pan().value().addValueObserver((pan) => update_mode_value(MODE_PAN, track, pan, mm.group_track_id[track]));
+    t.pan().value().addValueObserver((pan) => update_mode_value(MODE_PAN, track, pan));
 
     // Volume mode callback
-    t.volume().value().addValueObserver((volume) => update_mode_value(MODE_VOLUME, track, volume, mm.group_track_id[track]));
+    t.volume().value().addValueObserver((volume) => update_mode_value(MODE_VOLUME, track, volume));
   }
 }
 
@@ -229,14 +230,6 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
           let index = ccs.indexOf(data1);
           // Convert the index to the correct index
           if(index != -1) {
-            let gti = this.group_track_id[index];
-            println(JSON.stringify(gti));
-            if(gti != null && index != gti.id) {
-              session.sendMidi(0xB4, ccs[gti.id], data2);
-              index = gti.id;
-            } else if(gti != null) {
-              session.sendMidi(0xB4, ccs[index + gti.count], data2);
-            }
             let value = data2 / 127;
             if(Math.abs(value - 0.5) <= 0.02) {
               value = 0.5;
