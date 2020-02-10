@@ -11,7 +11,7 @@ const MODE_SOLO = 6;
 const MODE_RECORD_ARM = 7;
 const MODE_PADS = [89, 79, 69, 59, 49, 39, 29, 19];
 const FADER_BI = [false, true, false, false];
-const EPSILON = 0.05;
+const EPSILON = 0.02;
 
 // Globals
 var mixer_view;
@@ -52,9 +52,8 @@ function MixerMode() {
   let mm = this;
 
   let update_mode_value = (mode, i, value) => {
-    let ignore = mm.ignore_flag[mode][i];
     // println(`Called ${mode} ${i} ${value} ${mm.fader_values[mode][i]} ${ignore}`);
-    if(!ignore) {
+    if(!mm.ignore_flag[mode][i]) {
       mm.fader_values[mode][i] = value;
       mm.sendValues(session);
       host.requestFlush();
@@ -90,6 +89,14 @@ function MixerMode() {
     mm.max_position[MODE_SEND_A] = sbic;
     mm.setupFaders(session);
     host.requestFlush();
+  });
+
+  // Allow for view refresh on track change
+  arranger_track.position().addValueObserver((_) => {
+    println("CALLED");
+    for(let i = 0; i < 8; i++) {
+      mm.ignore_flag[MODE_SEND_A][i] = 0;
+    }
   });
 
   for(let send = 0; send < 8; send++) {
@@ -234,7 +241,7 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
           // Convert the index to the correct index
           if(index != -1) {
             let value = data2 / 127;
-            if(Math.abs(value - 0.5) <= 0.02) {
+            if(Math.abs(value - 0.5) < EPSILON) {
               value = 0.5;
             } // Nudge value to .5 if reasonable
             // println(`FADER ${index}: ${value}`)
