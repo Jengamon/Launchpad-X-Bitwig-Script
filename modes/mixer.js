@@ -52,7 +52,7 @@ function MixerMode() {
       host.requestFlush();
     }
     // If the delta is large enough, stop ignoring sending it.
-    if(Math.abs(mm.fader_values[mode][i] - value) > EPSILON && mm.ignore_flag[mode][i]) {
+    if(Math.abs(mm.fader_values[mode][i] - value) > EPSILON) {
       mm.ignore_flag[mode][i] = false;
     }
   }
