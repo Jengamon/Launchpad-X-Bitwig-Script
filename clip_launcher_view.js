@@ -206,6 +206,8 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
     case BRM_STOP:
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
+        // Workaroud for inactive tracks
+        if(!ts.active) { continue; }
         if(ts.exists) {
           if(ts.stopped) {
             mode.drawSolid(session, 7, j, STOPPED_COLOR);
@@ -218,6 +220,8 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
     case BRM_MUTE:
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
+        // Workaroud for inactive tracks
+        if(!ts.active) { continue; }
         if(ts.exists) {
           if(ts.mute) {
             mode.drawSolid(session, 7, j, MUTE_ON_COLOR);
@@ -230,6 +234,8 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
     case BRM_SOLO:
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
+        // Workaroud for inactive tracks
+        if(!ts.active) { continue; }
         if(ts.exists) {
           if(ts.solo) {
             mode.drawSolid(session, 7, j, SOLO_ON_COLOR);
@@ -242,6 +248,8 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
     case BRM_RECORD:
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
+        // Workaroud for inactive tracks
+        if(!ts.active) { continue; }
         let ni = this.view.getItemAt(j).sourceSelector().hasNoteInputSelected().get();
         let ai = this.view.getItemAt(j).sourceSelector().hasAudioInputSelected().get();
         if(ts.exists && (ni || ai)) {

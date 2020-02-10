@@ -137,6 +137,8 @@ function MixerMode() {
       }
     });
 
+    t.isActivated().markInterested();
+
     // Pan mode callback
     t.pan().value().addValueObserver((pan) => update_mode_value(MODE_PAN, track, pan));
 
@@ -321,6 +323,8 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
 
 MixerMode.prototype.uploadValue = function(mode, index, value) {
   let track = mixer_view.getItemAt(index);
+  // Don't update an inactive track (a workaround because TrackBanks can't ignore inactive tracks)
+  if(!track.isActivated().get()) { return; }
   this.ignore_flag[mode][index] = true;
   switch(mode) {
     case MODE_VOLUME:
@@ -369,6 +373,11 @@ MixerMode.prototype.faderColors = function() {
     case MODE_VOLUME:
     case MODE_PAN:
       colors = this.fader_colors;
+      for(let i = 0; i < 8; i++) {
+        if(!mixer_view.getItemAt(i).isActivated().get()) {
+          colors[i] = 0;
+        }
+      }
       break;
     case MODE_SEND_A:
       colors = this.send_exists.map((se) => (se ? 0x3 : 0x0));
