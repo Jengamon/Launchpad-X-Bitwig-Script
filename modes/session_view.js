@@ -2,6 +2,8 @@
 function SessionViewMode() {
   Mode.prototype.initialize.call(this);
 
+  clip_launcher_view = new ClipLauncherView(true);
+
   this.scene_colors = [0, 0, 0, 0, 0, 0, 0, 0];
   let svm = this;
   for(let scene = 0; scene < 8; scene++) {

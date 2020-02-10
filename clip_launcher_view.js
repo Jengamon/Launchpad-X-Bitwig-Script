@@ -35,8 +35,8 @@ function TrackState() {
   this.armed = false;
 }
 
-function ClipLauncherView() {
-  this.view = host.createTrackBank(8, 0, 8, false);
+function ClipLauncherView(flat) {
+  this.view = host.createTrackBank(8, 0, 8, flat);
 
   let clv = this;
 

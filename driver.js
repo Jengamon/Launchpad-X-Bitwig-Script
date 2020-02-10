@@ -14,7 +14,6 @@ function init() {
   // Initalize helper objects
   arranger_track = host.createCursorTrack(8, 0);
   arranger_device = arranger_track.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
-  clip_launcher_view = new ClipLauncherView();
   arranger_track.hasNext().markInterested();
   arranger_track.trackType().markInterested();
   let preferences = host.getPreferences();
