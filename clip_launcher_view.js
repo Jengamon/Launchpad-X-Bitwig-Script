@@ -220,8 +220,6 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
     case BRM_MUTE:
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
-        // Workaroud for inactive tracks
-        if(!ts.active) { continue; }
         if(ts.exists) {
           if(ts.mute) {
             mode.drawSolid(session, 7, j, MUTE_ON_COLOR);
