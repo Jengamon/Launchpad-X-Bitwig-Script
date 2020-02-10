@@ -93,7 +93,6 @@ function MixerMode() {
 
   // Allow for view refresh on track change
   arranger_track.position().addValueObserver((_) => {
-    println("CALLED");
     for(let i = 0; i < 8; i++) {
       mm.ignore_flag[MODE_SEND_A][i] = 0;
     }
