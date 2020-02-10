@@ -20,7 +20,7 @@ function init() {
   let preferences = host.getPreferences();
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
-  mode_double_pref = preferences.getEnumSetting("On Mode Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
+  mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
 
   // Initialize modes
   modes = [new SessionViewMode(), new MixerMode()];
