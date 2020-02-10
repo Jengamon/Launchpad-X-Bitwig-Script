@@ -60,7 +60,7 @@ function MixerMode() {
   for(let i = 0; i < 8; i++) {
     let param = this.controls.getParameter(i);
     param.setIndication(true);
-    param.exists().markInterested();
+    param.exists().addValueObserver(() => {mm.sendColors(session); host.requestFlush();});
     param.value().addValueObserver((control) => update_mode_value(MODE_SEND_B, i, control));
     this.controls.selectedPageIndex().addValueObserver((csp) => {
       mm.position[MODE_SEND_B] = csp;
