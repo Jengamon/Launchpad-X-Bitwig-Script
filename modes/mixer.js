@@ -252,7 +252,7 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
       }
       this.mode = new_mode;
       this.switchMode(session);
-    //} else if (status == 0xA0) {
+    } else if (status == 0xA0) {
       // Ignore aftertouch
     } else if (status == 0x90) {
       switch(this.mode) {
@@ -261,7 +261,7 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
         case MODE_SEND_A:
         case MODE_SEND_B:
           this.launchPad();
-          break
+          break;
         case MODE_STOP_CLIP:
         case MODE_MUTE:
         case MODE_SOLO:
