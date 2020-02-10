@@ -33,6 +33,7 @@ function TrackState() {
   this.stopped = false;
   this.exists = false;
   this.armed = false;
+  this.active = false;
 }
 
 function ClipLauncherView() {
@@ -90,6 +91,7 @@ function ClipLauncherView() {
     }
     clsb.addColorObserver((s, r, g, b) => {
       let color = find_novation_color(r, g, b);
+
       ts.clip_color[s] = color;
       host.requestFlush();
     });
@@ -101,6 +103,7 @@ function ClipLauncherView() {
     track.arm().addValueObserver((arm) => { ts.armed = arm; host.requestFlush(); });
     track.isStopped().addValueObserver((isStop) => { ts.stopped = isStop; host.requestFlush(); });
     track.exists().addValueObserver((exists) => { ts.exists = exists; host.requestFlush(); });
+    track.isActivated().addValueObserver((active) => { ts.active = active; host.requestFlush(); });
 
     this.track_states.push(ts);
   }
@@ -113,6 +116,10 @@ ClipLauncherView.prototype.generate = function(row, col, session, mode) {
   let queued = ts.clip_queued[row];
   let state = ts.clip_state[row];
   let armed = ts.armed;
+
+  // Don't draw inactive tracks (leave in until Bitwig allows us to ignore inactive tracks)
+  if(!ts.active) { return; }
+
   // println(`CLV ${row} ${col} ${exists} ${color} ${queued} ${armed}`)
   if(exists) {
     switch(state) {
