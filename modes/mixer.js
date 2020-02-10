@@ -131,17 +131,6 @@ function MixerMode() {
       }
     });
 
-    let children = t.createTrackBank(1, 0, 0, true);
-    children.itemCount().addValueObserver((children) => {
-      println(`OG${children}`)
-      if(children == 0) {
-        mm.group_track_id[track] = null;
-      } else {
-        mm.group_track_id[track] = {id: track, count: children};
-        mm.group_track_id[track + children] = {id: track, count: children};
-      }
-    });
-
     // Pan mode callback
     t.pan().value().addValueObserver((pan) => update_mode_value(MODE_PAN, track, pan, mm.group_track_id[track]));
 
