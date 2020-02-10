@@ -155,7 +155,7 @@ MixerMode.prototype.redraw = function(session) {
           this.drawCCSolid(session, 93, this.activeColor());
         }
       }
-      if(this.position[this.mode] + view_size < this.max_position[this.mode]) {
+      if(Math.max(this.position[this.mode], 0) + view_size < Math.max(this.max_position[this.mode], 0)) {
         if(!this.vertical) {
           this.drawCCSolid(session, 92, this.activeColor());
         } else {
