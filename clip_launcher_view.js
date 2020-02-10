@@ -94,6 +94,8 @@ function ClipLauncherView() {
       host.requestFlush();
     });
 
+    track.sourceSelector().hasNoteInputSelected().markInterested();
+    track.sourceSelector().hasAudioInputSelected().markInterested();
     track.solo().addValueObserver((solo) => { ts.solo = solo; host.requestFlush(); });
     track.mute().addValueObserver((mute) => { ts.mute = mute; host.requestFlush(); });
     track.arm().addValueObserver((arm) => { ts.armed = arm; host.requestFlush(); });
@@ -233,7 +235,9 @@ ClipLauncherView.prototype.draw = function(session, mode, _brm, controls) {
     case BRM_RECORD:
       for(let j = 0; j < this.track_states.length; j++) {
         let ts = this.track_states[j];
-        if(ts.exists) {
+        let ni = this.view.getItemAt(j).sourceSelector().hasNoteInputSelected().get();
+        let ai = this.view.getItemAt(j).sourceSelector().hasAudioInputSelected().get();
+        if(ts.exists && (ni || ai)) {
           if(ts.armed) {
             mode.drawSolid(session, 7, j, PLAYING_COLOR);
           } else {
