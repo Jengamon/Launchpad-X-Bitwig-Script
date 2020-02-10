@@ -238,9 +238,15 @@ MixerMode.prototype.onMidiIn = function(session, status, data1, data2) {
     if(col == 9) {
       let new_mode = 8 - row;
       if(new_mode == this.mode) {
-        // Do the action for everything in the view
-        for(let i = 0; i < 8; i++) {
-          this.modeAction(i);
+        switch(mode_double_pref.get()) {
+          case "Do Action":
+            // Do the action for everything in the view
+            for(let i = 0; i < 8; i++) {
+              this.modeAction(i);
+            }
+            break;
+          case "Do Nothing":
+            break; // Noop
         }
       }
       this.mode = new_mode;

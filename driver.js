@@ -3,7 +3,7 @@ var on_session = true;
 var arranger_device, arranger_track;
 var clip_launcher_view;
 var recording_active, ra_behavior;
-var follow_pref;
+var follow_pref, mode_double_pref;
 
 function init() {
   // Transport access
@@ -20,6 +20,7 @@ function init() {
   let preferences = host.getPreferences();
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
+  mode_double_pref = preferences.getEnumSetting("On Mode Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
 
   // Initialize modes
   modes = [new SessionViewMode(), new MixerMode()];
