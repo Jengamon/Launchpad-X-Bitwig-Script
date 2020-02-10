@@ -46,14 +46,14 @@ function MixerMode() {
   let mm = this;
 
   let update_mode_value = (mode, i, value) => {
-    // If the delta is large enough, send it.
-    if(Math.abs(mm.fader_values[mode][i] - value) > EPSILON && mm.ignore_flag[mode][i]) {
-      mm.ignore_flag[mode][i] = false;
-    }
     mm.fader_values[mode][i] = value;
     if(!mm.ignore_flag[mode][i]) {
       mm.sendValues(session);
       host.requestFlush();
+    }
+    // If the delta is large enough, stop ignoring sending it.
+    if(Math.abs(mm.fader_values[mode][i] - value) > EPSILON && mm.ignore_flag[mode][i]) {
+      mm.ignore_flag[mode][i] = false;
     }
   }
 
