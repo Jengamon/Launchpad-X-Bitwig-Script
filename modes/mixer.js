@@ -205,10 +205,29 @@ MixerMode.prototype.onDeactivate = function(session) {
 MixerMode.prototype.modeAction = function(at) {
   switch(this.mode) {
     case MODE_VOLUME:
+      // Reset volume for the track
+      mixer_view.getItemAt(at).volume().reset();
+      this.ignore_flag[MODE_VOLUME][at] = false;
+      host.requestFlush();
+      break;
     case MODE_PAN:
+      // Reset pan for the track
+      mixer_view.getItemAt(at).pan().reset();
+      this.ignore_flag[MODE_PAN][at] = false;
+      host.requestFlush();
+      break;
     case MODE_SEND_A:
+      // Reset send values
+      arranger_track.sendBank().getItemAt(at).reset();
+      this.ignore_flag[MODE_SEND_A][at] = false;
+      host.requestFlush();
+      break;
     case MODE_SEND_B:
-      break; // Noop
+      // Reset user controls
+      this.controls.getParameter(at).reset();
+      this.ignore_flag[MODE_SEND_B][at] = false;
+      host.requestFlush();
+      break;
     case MODE_STOP_CLIP:
       clip_launcher_view.view.getItemAt(at).stop();
       break;
