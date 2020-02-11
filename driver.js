@@ -22,7 +22,7 @@ function init() {
   arranger_track.hasNext().markInterested();
   arranger_track.trackType().markInterested();
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
-  follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
+  follow_pref = preferences.getBooleanSetting("Follow Selection?", "Behavior", true);
   mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
   clip_launcher_view = new ClipLauncherView();
 
