@@ -11,7 +11,7 @@ function init() {
   let swap_on_boot = preferences.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
   follow_pref = preferences.getBooleanSetting("Follow Selection?", "Behavior", true);
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
-  mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
+  mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Nothing");
 
   // Transport access
   transport = host.createTransport();
