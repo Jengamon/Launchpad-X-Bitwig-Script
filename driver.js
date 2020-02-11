@@ -4,12 +4,14 @@ var arranger_device, arranger_track;
 var clip_launcher_view;
 var recording_active, ra_behavior;
 var follow_pref, mode_double_pref;
+var send_track_notes;
 
 function init() {
   // Get preferences
   let preferences = host.getPreferences();
   let swap_on_boot = preferences.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
   follow_pref = preferences.getBooleanSetting("Follow Selection?", "Behavior", true);
+  send_track_notes = preferences.getBooleanSetting("Send Track Notes?", "Behavior", true);
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Nothing");
 

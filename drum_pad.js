@@ -16,25 +16,43 @@ function DrumPadMode() {
 
   // Add arranger track note forwarding
   let dpm = this;
+  let lighted = [];
   arranger_track.playingNotes().addValueObserver((note_array) => {
     // Convert note_array into a more reasonable form
     let notes = [];
 
+    // If we are configure to not send the track's current notes, don't send them.
+    if(!send_track_notes.get()) {
+      return;
+    }
+
+    let pert = [];
+
     for(let i = 0; i < note_array.length; i++) {
       let note = note_array[i];
       notes[note.pitch()] = note.velocity();
+      pert.push(note.pitch());
     }
 
-    // Send the MIDI externally
-    for(let i = 0; i < notes.length; i++) {
-      if(notes[i] != undefined && notes[i] > 0) {
-        session.custom_out.sendMidi(0x90 | dpm.midi_channel, i, notes[i]);
-      } else {
-        session.custom_out.sendMidi(0x80 | dpm.midi_channel, i, 0);
+    let new_lighted = [];
+
+    for(let i = 0; i < pert.length; i++) {
+      let ni = pert[i];
+      if(lighted.indexOf(ni) != -1 || notes[ni] != undefined) {
+        session.custom_out.sendMidi(0x90 | dpm.midi_channel, ni, notes[ni]);
+        new_lighted.push(ni);
       }
     }
 
-    for(let i = notes.length; i < 128; i++) { session.custom_out.sendMidi(0x80 | dpm.midi_channel, i, 0); }
+    for(let i = 0; i < lighted.length; i++) {
+      let ni = lighted[i];
+      if(new_lighted.indexOf(ni) == -1) {
+        session.custom_out.sendMidi(0x80 | dpm.midi_channel, ni, 0);
+      }
+    }
+
+    lighted = new_lighted;
+
   });
 
   this.helpers = [];
