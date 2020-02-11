@@ -52,7 +52,6 @@ function DrumPadMode() {
     }
 
     lighted = new_lighted;
-
   });
 
   this.helpers = [];
@@ -117,6 +116,7 @@ DrumPadMode.prototype.onMidiIn = function(session, status, data1, data2) {
     let hid = id - helper.offset;
     if(helper.isValid(hid)) {
       session.note_input.sendRawMidiEvent(status ^ 0x8 | this.midi_channel, nn, data2);
+      host.requestFlush();
     }
     // this.pressed[data1] = data2 > 0;
   } else {
