@@ -21,8 +21,8 @@ function init() {
   arranger_device = arranger_track.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
   arranger_track.hasNext().markInterested();
   arranger_track.trackType().markInterested();
-  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   follow_pref = preferences.getBooleanSetting("Follow Selection?", "Behavior", true);
+  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
   clip_launcher_view = new ClipLauncherView();
 
