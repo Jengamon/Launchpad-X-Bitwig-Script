@@ -15,23 +15,27 @@ function DrumPadMode() {
   arranger_track.playingNotes().markInterested();
 
   // Add arranger track note forwarding
+  let dpm = this;
   arranger_track.playingNotes().addValueObserver((note_array) => {
     // Convert note_array into a more reasonable form
-    let notes = {};
-    
+    let notes = [];
+
     for(let i = 0; i < note_array.length; i++) {
       let note = note_array[i];
+      println(`${typeof note.pitch()} ${note.velocity()}`)
       notes[note.pitch()] = note.velocity();
     }
 
     // Send the MIDI externally
-    for(let i = 0; i < 128; i++) {
-      if(notes[i] && notes[i] > 0) {
-        session.sendMidi(0x9F, i, notes[i]);
+    for(let i = 0; i < notes.length; i++) {
+      if(notes[i] != undefined && notes[i] > 0) {
+        session.custom_out.sendMidi(0x90 | dpm.midi_channel, i, notes[i]);
       } else {
-        session.sendMidi(0x8F, i, 0);
+        session.custom_out.sendMidi(0x80 | dpm.midi_channel, i, 0);
       }
     }
+
+    for(let i = notes.length; i < 128; i++) { session.custom_out.sendMidi(0x80 | dpm.midi_channel, i, 0); }
   });
 
   this.helpers = [];
