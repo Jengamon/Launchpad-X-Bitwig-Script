@@ -6,8 +6,12 @@ var recording_active, ra_behavior;
 var follow_pref, mode_double_pref;
 
 function init() {
+  // Get preferences
   let preferences = host.getPreferences();
   let swap_on_boot = preferences.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
+  follow_pref = preferences.getBooleanSetting("Follow Selection?", "Behavior", true);
+  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
+  mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
 
   // Transport access
   transport = host.createTransport();
@@ -21,9 +25,6 @@ function init() {
   arranger_device = arranger_track.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
   arranger_track.hasNext().markInterested();
   arranger_track.trackType().markInterested();
-  follow_pref = preferences.getBooleanSetting("Follow Selection?", "Behavior", true);
-  ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
-  mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
   clip_launcher_view = new ClipLauncherView();
 
   // Initialize modes
