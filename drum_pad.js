@@ -22,7 +22,6 @@ function DrumPadMode() {
 
     for(let i = 0; i < note_array.length; i++) {
       let note = note_array[i];
-      println(`${typeof note.pitch()} ${note.velocity()}`)
       notes[note.pitch()] = note.velocity();
     }
 
