@@ -1,7 +1,7 @@
 // Handles custom note forwarding and holds the i/o ports (handles sending sysex and midi)
 const SYSEX_HEADER = "f0 00 20 29 02 0c";
 
-function Session() {
+function Session(swap_on_boot) {
   this.daw_in = host.getMidiInPort(0);
   this.daw_out = host.getMidiOutPort(0);
 
@@ -19,8 +19,10 @@ function Session() {
   this.sendSysex("10 01");
   // Clear daw mode
   this.sendSysex("12 00 00 00");
-  // Swap to session mode
-  this.sendSysex("00 00");
+  // Swap to session mode (if the setting is true)
+  if(swap_on_boot) {
+    this.sendSysex("00 00");
+  }
 
   this.forceSend();
 }

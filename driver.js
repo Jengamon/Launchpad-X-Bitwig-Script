@@ -6,17 +6,21 @@ var recording_active, ra_behavior;
 var follow_pref, mode_double_pref;
 
 function init() {
+  let preferences = host.getPreferences();
+  let swap_on_boot = preferences.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
+
   // Transport access
   transport = host.createTransport();
-  session = new Session();
+  session = new Session(swap_on_boot.get());
   session.setCallbacks(onMidi0, onSysex0, onMidi1, onSysex1);
+
+  on_session = swap_on_boot.get();
 
   // Initalize helper objects
   arranger_track = host.createCursorTrack(8, 0);
   arranger_device = arranger_track.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
   arranger_track.hasNext().markInterested();
   arranger_track.trackType().markInterested();
-  let preferences = host.getPreferences();
   ra_behavior = preferences.getEnumSetting("Record Button Behavior", "Behavior", ["Toggle Launcher Overdub", "Cycle Selection"], "Toggle Launcher Overdub");
   follow_pref = preferences.getBooleanSetting("Follow Selection", "Behavior", true);
   mode_double_pref = preferences.getEnumSetting("On Mixer Mode Button Double Press", "Behavior", ["Do Nothing", "Do Action"], "Do Action");
@@ -25,7 +29,12 @@ function init() {
   // Initialize modes
   modes = [new SessionViewMode(), new MixerMode()];
   mode_index = 0;
-  modes[mode_index].onActivate(session);
+  if(on_session) {
+    modes[mode_index].onActivate(session);
+  } else {
+    // Light CC 99 with the default color (white)
+    session.sendMidi(0xB0, 99, 1);
+  }
 
   // Depending on whether the first device is a Drum Machine, switch between
   // Simple Drum Mode and normal Notes mode
