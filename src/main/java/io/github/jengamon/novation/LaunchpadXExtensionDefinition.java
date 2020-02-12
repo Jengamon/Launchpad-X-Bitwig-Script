@@ -9,7 +9,7 @@ import com.bitwig.extension.controller.api.ControllerHost;
 public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
 {
    private static final UUID DRIVER_ID = UUID.fromString("54555913-b867-4c61-8866-5e79ca63aa88");
-   
+
    public LaunchpadXExtensionDefinition()
    {
    }
@@ -17,9 +17,9 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getName()
    {
-      return "Launchpad X";
+      return "Launchpad X (API 10)";
    }
-   
+
    @Override
    public String getAuthor()
    {
@@ -29,7 +29,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getVersion()
    {
-      return "0.5";
+      return "0.5-java";
    }
 
    @Override
@@ -37,13 +37,13 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    {
       return DRIVER_ID;
    }
-   
+
    @Override
    public String getHardwareVendor()
    {
       return "Novation";
    }
-   
+
    @Override
    public String getHardwareModel()
    {
@@ -73,9 +73,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    {
       if (platformType == PlatformType.WINDOWS)
       {
-         // TODO: Set the correct names of the ports for auto detection on Windows platform here
-         // and uncomment this when port names are correct.
-         // list.add(new String[]{"Input Port 0", "Input Port 1"}, new String[]{"Output Port 0", "Output Port 1"});
+         list.add(new String[]{"LPX MIDI", "MIDIIN2 (LPX MIDI)"}, new String[]{"LPX MIDI", "MIDIOUT2 (LPX MIDI)"});
       }
       else if (platformType == PlatformType.MAC)
       {

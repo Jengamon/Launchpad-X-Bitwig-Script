@@ -7,6 +7,10 @@
 	<packaging>jar</packaging>
 	<name>Launchpad X</name>
 	<version>0.5</version>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	
 	<repositories>
        <repository>

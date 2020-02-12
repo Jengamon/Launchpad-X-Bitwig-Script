@@ -16,3 +16,8 @@ to this framework, but we'll see.
 ## TODO
 
 - Add Mac and Linux autodetection (maybes take this from DrivenByMoss?)
+
+## API 10 Version
+
+It seems that the JS API for Bitwig just has some limitiations that I can't jive
+with, so I made the switch to the Java API. We'll see how it goes~
