@@ -1,7 +1,6 @@
 package io.github.jengamon.novation;
 
 import com.bitwig.extension.api.Color;
-import io.github.jengamon.novation.state.ColorTag;
 
 public class Utils {
     public static String printColor(Color c) {

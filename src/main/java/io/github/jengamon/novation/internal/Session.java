@@ -98,7 +98,7 @@ public class Session {
     }
 
     public void sendMidi(int status, int data1, int data2) {
-        if(status != 0) System.out.println(Utils.toHexString((byte)status) + "[" + Utils.toHexString((byte) data1) + " " + Utils.toHexString((byte) data2) + "]");
+//        if(status != 0) System.out.println(Utils.toHexString((byte)status) + "[" + Utils.toHexString((byte) data1) + " " + Utils.toHexString((byte) data2) + "]");
         dawOut.sendMidi(status, data1, data2);
     }
 
