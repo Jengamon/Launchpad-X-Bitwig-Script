@@ -24,11 +24,19 @@ public class SessionPadLight extends SessionSendableLightState {
     private BooleanSyncWrapper mIsQueued;
     private RangedValueSyncWrapper mBPM;
     private BooleanSyncWrapper mIsTrackEnabled;
+    private BooleanSyncWrapper mIsMuted;
+    private BooleanSyncWrapper mIsSoloed;
+    private BooleanSyncWrapper mIsStopped;
+    private BooleanSyncWrapper mTrackExists;
+    private BooleanSyncWrapper mHasNoteInput;
+    private BooleanSyncWrapper mHasAudioInput;
     private int mTrack;
     private int mScene;
 
     public SessionPadLight(int x, int y, RangedValueSyncWrapper bpm, AtomicReference<SessionPadMode> padMode, ColorSyncWrapper baseColor, BooleanSyncWrapper armed,
-                           BooleanSyncWrapper sceneExists, IntegerSyncWrapper playbackState, BooleanSyncWrapper isQueued, BooleanSyncWrapper isTrackEnabled) {
+                           BooleanSyncWrapper sceneExists, IntegerSyncWrapper playbackState, BooleanSyncWrapper isQueued, BooleanSyncWrapper isTrackEnabled,
+                           BooleanSyncWrapper isMuted, BooleanSyncWrapper isSoloed, BooleanSyncWrapper isStopped, BooleanSyncWrapper trackExists,
+                           BooleanSyncWrapper hasNoteInput, BooleanSyncWrapper hasAudioInput) {
         mTrack = x;
         mScene = y;
         mBaseColor = baseColor;
@@ -38,6 +46,12 @@ public class SessionPadLight extends SessionSendableLightState {
         mPlaybackState = playbackState;
         mIsTrackEnabled = isTrackEnabled;
         mIsQueued = isQueued;
+        mIsMuted = isMuted;
+        mIsSoloed = isSoloed;
+        mIsStopped = isStopped;
+        mTrackExists = trackExists;
+        mHasAudioInput = hasAudioInput;
+        mHasNoteInput = hasNoteInput;
         mBPM = bpm;
     }
 
@@ -48,10 +62,36 @@ public class SessionPadLight extends SessionSendableLightState {
         ColorTag baseColor = Utils.toTag(mBaseColor.get());
         switch (mPadMode.get()) {
             case SESSION:
+            case VOLUME:
+            case PAN:
+            case SENDS:
+            case CONTROLS:
                 if(baseColor.selectNovationColor() == 0 && mArmed.get() && mSceneExists.get() && mIsTrackEnabled.get()) {
                     return new ColorTag(0xaa, 0x61, 0x61);
                 } else {
                     return (mIsTrackEnabled.get() ? baseColor : new ColorTag(0, 0, 0));
+                }
+            case STOP:
+                if(mIsTrackEnabled.get() && mTrackExists.get()) {
+                    if(mIsStopped.get()) {
+                        return new ColorTag(0xaa, 0x61, 0x61);
+                    } else {
+                        return new ColorTag(0xff, 0x61, 0x61);
+                    }
+                } else {
+                    return new ColorTag(0, 0, 0);
+                }
+            case RECORD:
+                if(mIsTrackEnabled.get() && mTrackExists.get()) {
+                    if(mArmed.get()) {
+                        return new ColorTag(0xff, 0x61, 0x61);
+                    } else if(mHasNoteInput.get() || mHasAudioInput.get()) {
+                        return new ColorTag(0xaa, 0x61, 0x61);
+                    } else {
+                        return new ColorTag(0, 0, 0);
+                    }
+                } else {
+                    return new ColorTag(0, 0, 0);
                 }
             default:
                 return new ColorTag(0, 0, 0);
@@ -61,6 +101,10 @@ public class SessionPadLight extends SessionSendableLightState {
     private ColorTag getBlinkColor() {
         switch(mPadMode.get()) {
             case SESSION:
+            case VOLUME:
+            case PAN:
+            case SENDS:
+            case CONTROLS:
                 switch(mPlaybackState.get()) {
                     case 0: // Stopped
                         if(mIsQueued.get() && mIsTrackEnabled.get()) {
@@ -91,6 +135,10 @@ public class SessionPadLight extends SessionSendableLightState {
     private ColorTag getPulseColor() {
         switch(mPadMode.get()) {
             case SESSION:
+            case VOLUME:
+            case PAN:
+            case SENDS:
+            case CONTROLS:
                 switch(mPlaybackState.get()) {
                     case 2: // Recording
                         if(!mIsQueued.get() && mIsTrackEnabled.get()) return new ColorTag(0xdd, 0x61, 0x61);

@@ -17,7 +17,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getName()
    {
-      return "Launchpad X (API 10)";
+      return "Launchpad X";
    }
 
    @Override
@@ -29,7 +29,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getVersion()
    {
-      return "0.5-java";
+      return "0.5";
    }
 
    @Override
@@ -77,15 +77,12 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
       }
       else if (platformType == PlatformType.MAC)
       {
-         // TODO: Set the correct names of the ports for auto detection on Windows platform here
-         // and uncomment this when port names are correct.
-         // list.add(new String[]{"Input Port 0", "Input Port 1"}, new String[]{"Output Port 0", "Output Port 1"});
+         // TODO: Find a good guess for the Mac names.
       }
       else if (platformType == PlatformType.LINUX)
       {
-         // TODO: Set the correct names of the ports for auto detection on Windows platform here
-         // and uncomment this when port names are correct.
-         // list.add(new String[]{"Input Port 0", "Input Port 1"}, new String[]{"Output Port 0", "Output Port 1"});
+         // TODO Find better guess. Get a Linux.
+         list.add(new String[]{"Launchpad X MIDI", "Launchpad X MIDI 2"}, new String[]{"Launchpad X MIDI", "Launchpad X MIDI 2"});
       }
    }
 

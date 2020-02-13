@@ -33,5 +33,5 @@ Simply download the desired version of "LaunchpadX.bwextension" from the Release
 then put it in your Bitwig "Extensions" folder.
 
 Or you can build it yourself (and at the bleeding edge) by downloading the repository
-and running "mvn install" in the root directory with both Java (at least 12) and 
+and running "mvn install" in the root directory with both JDK (at least 12) and 
 Maven installed.

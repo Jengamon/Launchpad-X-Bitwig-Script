@@ -27,19 +27,25 @@ public class SessionMode extends AbstractMode {
         private RangedValueSyncWrapper mBPM;
         private ColorSyncWrapper mSceneColor;
         private BooleanSyncWrapper mExists;
+        private BooleanSyncWrapper mPulse;
         private int mID;
 
-        private SceneLight(int id, RangedValueSyncWrapper bpm, ColorSyncWrapper sceneColor, BooleanSyncWrapper exists) {
+        private SceneLight(int id, RangedValueSyncWrapper bpm, ColorSyncWrapper sceneColor, BooleanSyncWrapper exists, BooleanSyncWrapper pulse) {
             mBPM = bpm;
             mID = id;
             mSceneColor = sceneColor;
             mExists = exists;
+            mPulse = pulse;
         }
 
         @Override
         public HardwareLightVisualState getVisualState() {
             if(mExists.get()) {
-                return HardwareLightVisualState.createBlinking(mSceneColor.get(), Color.mix(mSceneColor.get(), Color.nullColor(), 0.7), 60.0 / mBPM.get(), 60.0 / mBPM.get());
+                if(mPulse.get()) {
+                    return HardwareLightVisualState.createBlinking(mSceneColor.get(), Color.mix(mSceneColor.get(), Color.nullColor(), 0.7), 60.0 / mBPM.get(), 60.0 / mBPM.get());
+                } else {
+                    return HardwareLightVisualState.createForColor(mSceneColor.get());
+                }
             } else {
                 return HardwareLightVisualState.createForColor(Color.nullColor());
             }
@@ -56,7 +62,7 @@ public class SessionMode extends AbstractMode {
         @Override
         public void send(Session session) {
             if(mExists.get()) {
-                session.sendMidi(0xB2, mID, Utils.toTag(mSceneColor.get()).selectNovationColor());
+                session.sendMidi(0xB0 | (mPulse.get() ? 2 : 0), mID, Utils.toTag(mSceneColor.get()).selectNovationColor());
             } else {
                 session.sendMidi(0xB0, mID, 0);
             }
@@ -68,7 +74,7 @@ public class SessionMode extends AbstractMode {
     private SessionPadLight[][] padLights;
     private HardwareActionBindable[][] padActions;
 
-    public SessionMode(TrackBank bank, Transport transport, HardwareSurface surf, ControllerHost host) {
+    public SessionMode(TrackBank bank, Transport transport, HardwareSurface surf, ControllerHost host, BooleanSyncWrapper pulseSessionPads) {
         mBank = bank;
         sceneLaunchActions = new HardwareActionBindable[8];
         sceneLights = new SceneLight[8];
@@ -84,7 +90,7 @@ public class SessionMode extends AbstractMode {
                 scene.launch();
                 scene.selectInEditor();
             }, () -> "Press Scene " + finalI);
-            sceneLights[i] = new SceneLight(ids[i], bpm, padColor, exists);
+            sceneLights[i] = new SceneLight(ids[i], bpm, padColor, exists, pulseSessionPads);
         }
 
         // Setup pad lights and buttons
@@ -102,6 +108,12 @@ public class SessionMode extends AbstractMode {
                 BooleanSyncWrapper armed = new BooleanSyncWrapper(mBank.getItemAt(i).arm(), surf, host);
                 BooleanSyncWrapper sceneExists = new BooleanSyncWrapper(mBank.sceneBank().getItemAt(j).exists(), surf, host);
                 BooleanSyncWrapper trackEnabled = new BooleanSyncWrapper(track.isActivated(), surf, host);
+                BooleanSyncWrapper isMuted = new BooleanSyncWrapper(track.mute(), surf, host);
+                BooleanSyncWrapper isSoloed = new BooleanSyncWrapper(track.solo(), surf, host);
+                BooleanSyncWrapper isStopped = new BooleanSyncWrapper(track.isStopped(), surf, host);
+                BooleanSyncWrapper trackExists = new BooleanSyncWrapper(track.exists(), surf, host);
+                BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
+                BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
                 int finalJ = j;
                 // Extract the playback state
                 Value<IntegerValueChangedCallback> playbackStateValue = new Value<IntegerValueChangedCallback>() {
@@ -153,7 +165,9 @@ public class SessionMode extends AbstractMode {
                 But we want
                 [scene][track] displayed, so we manually transpose the arrays
                  */
-                padLights[j][i] = new SessionPadLight(i, j, bpm, padMode, color, armed, sceneExists, playbackState, isQueued, trackEnabled);
+                padLights[j][i] = new SessionPadLight(i, j, bpm, padMode, color, armed,
+                        sceneExists, playbackState, isQueued, trackEnabled,
+                        isMuted, isSoloed, isStopped, trackExists, hasNoteInput, hasAudioInput);
                 SessionPadAction action = new SessionPadAction(i, j, padMode, slot, track, trackEnabled);
                 padActions[j][i] = host.createAction(action, action);
             }
