@@ -92,7 +92,7 @@ public class Session {
         builder.append("f7");
 
         String sysex = builder.toString();
-//        System.out.println(sysex);
+        System.out.println(sysex);
         dawOut.sendSysex(sysex);
     }
 

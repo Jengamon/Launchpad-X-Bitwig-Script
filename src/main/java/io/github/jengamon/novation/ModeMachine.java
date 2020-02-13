@@ -19,8 +19,10 @@ public class ModeMachine {
     public ModeMachine() {
         mModes = new HashMap<>();
         mBindings = new ArrayList<>();
-        mMode = null;
+        mMode = Mode.UNKNOWN;
     }
+
+    public Mode mode() { return mMode; }
 
     public void register(Mode mode, AbstractMode am) {
         mModes.put(mode, am);

@@ -62,7 +62,7 @@ public class LaunchpadXSurface {
         for(int row = 0; row < 8; row++) {
             mNoteButtons[row] = new NoteButton[8];
             for(int col = 0; col < 8; col++) {
-                mNoteButtons[row][col] = new NoteButton(host, session, surface, "" + row + "," + col, row_offsets[row] + col, drum_pad_notes[row * 8 + col], 13 + (col * 23), 13 + 23 + (row * 23));
+                mNoteButtons[row][col] = new NoteButton(host, session, surface, "" + row + "," + col, row_offsets[row] + col + 1, drum_pad_notes[row * 8 + col], 13 + (col * 23), 13 + 23 + (row * 23));
             }
         }
     }
@@ -72,7 +72,6 @@ public class LaunchpadXSurface {
         mDownArrow.resetColor();
         mLeftArrow.resetColor();
         mRightArrow.resetColor();
-        mRecordButton.resetColor();
         mNovationButton.resetColor();
 
         for(LaunchpadXPad scenePad : mSceneButtons) {

@@ -23,8 +23,8 @@ public class CCButton implements LaunchpadXPad {
         mButton.setBackgroundLight(mLight);
         mButton.setBounds(x, y, 21, 21);
 
-        mLight.state().onUpdateHardware(state -> {
-            SessionSendable sendable = (SessionSendable)state;
+        mLight.onUpdateHardware(() -> {
+            SessionSendable sendable = (SessionSendable)mLight.state().currentValue();
             if(sendable != null) {
                 sendable.send(session);
             }

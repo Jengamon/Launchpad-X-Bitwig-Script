@@ -27,7 +27,7 @@ public class BasicColor extends InternalHardwareLightState implements SessionSen
 
     @Override
     public boolean equals(Object obj) {
-        if(obj.getClass() != BasicColor.class) return false;
+        if(obj == null || obj.getClass() != BasicColor.class) return false;
         BasicColor other = (BasicColor)obj;
         return mColor.equals(other.mColor) && Arrays.equals(mIDs, other.mIDs)  && Arrays.equals(mChannels, other.mChannels) && mCommand == other.mCommand;
     }

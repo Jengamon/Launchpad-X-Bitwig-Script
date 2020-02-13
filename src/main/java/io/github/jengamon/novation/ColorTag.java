@@ -15,6 +15,8 @@ public class ColorTag {
 
     static {
         INDEX_COLORS.put("000000", 0);
+
+        // Bitwig colors (approximations)
         INDEX_COLORS.put("ff5706", 0x54);
         INDEX_COLORS.put("d99d10", 0x3D);
         INDEX_COLORS.put("545454", 0x75);
@@ -42,7 +44,16 @@ public class ColorTag {
         INDEX_COLORS.put("739814", 0x13);
         INDEX_COLORS.put("a0c04c", 0x11);
         INDEX_COLORS.put("808080", 0x1);
+        INDEX_COLORS.put("7f7f7f", 0x1); // Bitwig "default" color
+
+        // Actual Hex
+        INDEX_COLORS.put("ffffff", 0x3);
+        INDEX_COLORS.put("ff6161", 0x5);
+        INDEX_COLORS.put("dd6161", 0x6);
+        INDEX_COLORS.put("b36161", 0x7);
+        INDEX_COLORS.put("61ff61", 0x15);
         INDEX_COLORS.put("6161ff", 0x2d);
+        INDEX_COLORS.put("aa6161", 0x79);
     }
 
     public ColorTag(int red, int green, int blue) {

@@ -43,8 +43,8 @@ public class NoteButton implements LaunchpadXPad {
         mDrumButton.setBackgroundLight(mLight);
         mButton.setBounds(x, y, 21, 21);
         mDrumButton.setBounds(x, y, 21, 21);
-        mDrumButton.setLabel("");
-        mButton.setLabel(""); // Don't label note pads
+        mDrumButton.setLabel(" ");
+        mButton.setLabel(" "); // Don't label note pads
 
         // Upload the state to the hardware
         mLight.state().onUpdateHardware(state -> {
@@ -61,8 +61,8 @@ public class NoteButton implements LaunchpadXPad {
         String drumExpr = host.midiExpressions().createIsNoteOnExpression(8, dpnote);
         String drumAftExpr = host.midiExpressions().createIsPolyAftertouch(8, dpnote);
 
-        System.out.println(drumExpr);
-        System.out.println(drumAftExpr);
+//        System.out.println(drumExpr);
+//        System.out.println(drumAftExpr);
 
         HardwareActionMatcher onRelease = in.createActionMatcher("status == 0x90 && data2 == 0 && data1 == " + note);
         AbsoluteHardwareValueMatcher onAfterRelease = in.createAbsoluteValueMatcher(aftExpr + " && data2 == 0", "data2", 8);
