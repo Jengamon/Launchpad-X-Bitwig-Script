@@ -32,23 +32,25 @@ public class SessionPadAction implements Runnable, Supplier<String> {
 
     @Override
     public void run() {
-        switch(mPadMode.get()) {
-            case SESSION:
-                mSlot.launch();
-                break;
-            case MUTE:
-                if(mIsTrackEnabled.get()) mClipTrack.mute().toggle();
-                break;
-            case SOLO:
-                if(mIsTrackEnabled.get()) mClipTrack.solo().toggle();
-                break;
-            case STOP:
-                if(mIsTrackEnabled.get()) mClipTrack.stop();
-                break;
-            case RECORD:
-                if(mIsTrackEnabled.get()) mClipTrack.arm().toggle();
-                break;
-            default:
+        if(mIsTrackEnabled.get()) {
+            switch(mPadMode.get()) {
+                case SESSION:
+                    mSlot.launch();
+                    break;
+                case MUTE:
+                    mClipTrack.mute().toggle();
+                    break;
+                case SOLO:
+                    mClipTrack.solo().toggle();
+                    break;
+                case STOP:
+                    mClipTrack.stop();
+                    break;
+                case RECORD:
+                    mClipTrack.arm().toggle();
+                    break;
+                default:
+            }
         }
     }
 
