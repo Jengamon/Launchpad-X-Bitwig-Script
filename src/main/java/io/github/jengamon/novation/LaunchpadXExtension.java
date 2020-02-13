@@ -118,15 +118,19 @@ public class LaunchpadXExtension extends ControllerExtension
       mMachine = new ModeMachine();
       mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mSurface, host));
       mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mSurface, mCursorDevice));
-      mMachine.register(Mode.MIXER, new MixerMode());
+      mMachine.register(Mode.MIXER, new MixerMode(host, mSession, mSurface, mMixerTrackBank));
 
       MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
 
       // Select record button behavior and light it accordingly
       mCursorTrack.hasNext().markInterested();
+      AtomicBoolean recordActionToggle = new AtomicBoolean(false);
+      AtomicBoolean recordLevelGlobal = new AtomicBoolean(false);
+      mRecordAction.addValueObserver(val -> recordActionToggle.set(val.equals("Toggle Record")));
+      mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global")));
       Runnable selectAction = () -> {
-         if(mRecordAction.get() == "Toggle Record") {
-            if(mRecordLevel.get() == "Global") {
+         if(recordActionToggle.get()) {
+            if(recordLevelGlobal.get()) {
                mTransport.isArrangerRecordEnabled().toggle();
             } else {
                mTransport.isClipLauncherOverdubEnabled().toggle();

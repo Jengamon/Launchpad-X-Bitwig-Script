@@ -48,6 +48,10 @@ public class SessionPadLight extends SessionSendableLightState {
         ColorTag baseColor = Utils.toTag(mBaseColor.get());
         switch (mPadMode.get()) {
             case SESSION:
+            case VOLUME:
+            case PAN:
+            case SENDS:
+            case CONTROLS:
                 if(baseColor.selectNovationColor() == 0 && mArmed.get() && mSceneExists.get() && mIsTrackEnabled.get()) {
                     return new ColorTag(0xaa, 0x61, 0x61);
                 } else {
@@ -61,6 +65,10 @@ public class SessionPadLight extends SessionSendableLightState {
     private ColorTag getBlinkColor() {
         switch(mPadMode.get()) {
             case SESSION:
+            case VOLUME:
+            case PAN:
+            case SENDS:
+            case CONTROLS:
                 switch(mPlaybackState.get()) {
                     case 0: // Stopped
                         if(mIsQueued.get() && mIsTrackEnabled.get()) {
@@ -91,6 +99,10 @@ public class SessionPadLight extends SessionSendableLightState {
     private ColorTag getPulseColor() {
         switch(mPadMode.get()) {
             case SESSION:
+            case VOLUME:
+            case PAN:
+            case SENDS:
+            case CONTROLS:
                 switch(mPlaybackState.get()) {
                     case 2: // Recording
                         if(!mIsQueued.get() && mIsTrackEnabled.get()) return new ColorTag(0xdd, 0x61, 0x61);
