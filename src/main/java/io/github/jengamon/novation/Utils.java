@@ -25,7 +25,7 @@ public class Utils {
         System.out.println(sysex);
         byte[] bytes = new byte[message.length() / 2];
         for(int i = 0; i < bytes.length; i++) {
-            bytes[i] = (byte)(Integer.parseInt(message.substring(i, i + 2), 16) & 0xff);
+            bytes[i] = (byte)(Integer.parseInt(message.substring(i * 2, i * 2 + 2), 16) & 0xff);
         }
         return bytes;
     }

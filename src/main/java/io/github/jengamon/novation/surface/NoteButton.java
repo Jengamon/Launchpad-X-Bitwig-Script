@@ -61,32 +61,31 @@ public class NoteButton implements LaunchpadXPad {
         String drumExpr = host.midiExpressions().createIsNoteOnExpression(8, dpnote);
         String drumAftExpr = host.midiExpressions().createIsPolyAftertouch(8, dpnote);
 
-//        HardwareActionMatcher onPress = in.createActionMatcher(expr + " && data2 > 0 ");
-        HardwareActionMatcher onRelease = in.createActionMatcher(expr + " && data2 == 0");
-        HardwareActionMatcher onAfterRelease = in.createActionMatcher(aftExpr + " && data2 == 0");
-        HardwareActionMatcher onChannelRelease = in.createActionMatcher("status == 0xD0 && event == 0");
+        System.out.println(drumExpr);
+        System.out.println(drumAftExpr);
+
+        HardwareActionMatcher onRelease = in.createActionMatcher("status == 0x90 && data2 == 0 && data1 == " + note);
+        AbsoluteHardwareValueMatcher onAfterRelease = in.createAbsoluteValueMatcher(aftExpr + " && data2 == 0", "data2", 8);
+        AbsoluteHardwareValueMatcher onChannelPressure = in.createAbsoluteValueMatcher("status == 0xD0", "data1", 7);
         AbsoluteHardwareValueMatcher onVelocity = in.createNoteOnVelocityValueMatcher(0, note);
         AbsoluteHardwareValueMatcher onAftertouch = in.createPolyAftertouchValueMatcher(0, note);
-        AbsoluteHardwareValueMatcher onChannelPressure = in.createAbsoluteValueMatcher("status == 0xD0", "data1", 8);
-//        HardwareActionMatcher onDrumPress = in.createActionMatcher(drumExpr + " && data2 > 0 ");
-        HardwareActionMatcher onDrumRelease = in.createActionMatcher(drumExpr + "&& data2 == 0");
-        HardwareActionMatcher onDrumAfterRelease = in.createActionMatcher(drumAftExpr + " && data2 == 0");
-        HardwareActionMatcher onDrumChannelRelease = in.createActionMatcher("status == 0xD8 && event == 0");
-        AbsoluteHardwareValueMatcher onDrumChannelPressure = in.createAbsoluteValueMatcher("status == 0xD8", "data1 & 0xFF", 8);
+        HardwareActionMatcher onDrumRelease = in.createActionMatcher("status == 0x98 && data1 == " + dpnote + " && data2 == 0");
+        AbsoluteHardwareValueMatcher onDrumPolyAfterOff = in.createAbsoluteValueMatcher( drumAftExpr + " && data2 == 0", "data2", 8);
         AbsoluteHardwareValueMatcher onDrumVelocity = in.createNoteOnVelocityValueMatcher(8, dpnote);;
         AbsoluteHardwareValueMatcher onDrumAftertouch = in.createPolyAftertouchValueMatcher(8, dpnote);
+        AbsoluteHardwareValueMatcher onDrumChannelPressure = in.createAbsoluteValueMatcher("status == 0xD8", "data1", 7);
 
         mButton.setAftertouchControl(mAftertouch);
         mAftertouch.setAdjustValueMatcher(host.createOrAbsoluteHardwareValueMatcher(onAftertouch, onChannelPressure));
-//        mButton.pressedAction().setActionMatcher(onPress);
         mButton.pressedAction().setPressureActionMatcher(onVelocity);
-        mButton.releasedAction().setActionMatcher(host.createOrHardwareActionMatcher(onRelease, host.createOrHardwareActionMatcher(onAfterRelease, onChannelRelease)));
+        mButton.releasedAction().setActionMatcher(onRelease);
+        mButton.releasedAction().setPressureActionMatcher(onAfterRelease);
 
         mDrumButton.setAftertouchControl(mDrumAftertouch);
         mDrumAftertouch.setAdjustValueMatcher(host.createOrAbsoluteHardwareValueMatcher(onDrumAftertouch, onDrumChannelPressure));
-//        mDrumButton.pressedAction().setActionMatcher(onDrumPress);
         mDrumButton.pressedAction().setPressureActionMatcher(onDrumVelocity);
-        mDrumButton.releasedAction().setActionMatcher(host.createOrHardwareActionMatcher(onDrumRelease, host.createOrHardwareActionMatcher(onDrumAfterRelease, onDrumChannelRelease)));
+        mDrumButton.releasedAction().setActionMatcher(onDrumRelease);
+        mDrumButton.releasedAction().setPressureActionMatcher(onDrumPolyAfterOff);
     }
 
     public void setButtonMode(NoteButton.Mode mode) {
@@ -122,7 +121,7 @@ public class NoteButton implements LaunchpadXPad {
 
     @Override
     public void resetColor() {
-        mLight.state().setValue(new BasicColor(ColorTag.INDEX_COLORS[0], 0x90, new int[]{0, 8}, mNote, mDPNote));
+        mLight.state().setValue(new BasicColor(ColorTag.NULL_COLOR, 0x90, new int[]{0, 8}, mNote, mDPNote));
     }
 
     @Override

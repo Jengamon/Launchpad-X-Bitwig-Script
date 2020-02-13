@@ -4,6 +4,7 @@ import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.ColorTag;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
+import io.github.jengamon.novation.reactive.SessionSendable;
 import io.github.jengamon.novation.surface.ihls.BasicColor;
 
 /**
@@ -22,13 +23,20 @@ public class CCButton implements LaunchpadXPad {
         mButton.setBackgroundLight(mLight);
         mButton.setBounds(x, y, 21, 21);
 
+        mLight.state().onUpdateHardware(state -> {
+            SessionSendable sendable = (SessionSendable)state;
+            if(sendable != null) {
+                sendable.send(session);
+            }
+        });
+
         MidiIn in = session.midiIn(ChannelType.DAW);
 
-        HardwareActionMatcher onPress = in.createActionMatcher("status == 0xB0 && data2 > 0 && data1 == " + cc);
+//        HardwareActionMatcher onPress = in.createActionMatcher("status == 0xB0 && data2 == 127 && data1 == " + cc);
         HardwareActionMatcher onRelease = in.createCCActionMatcher(0, cc, 0);
-        AbsoluteHardwareValueMatcher onVelocity = in.createAbsoluteCCValueMatcher(0, cc);
+        AbsoluteHardwareValueMatcher onVelocity = in.createAbsoluteValueMatcher("status == 0xB0 && data2 > 0 && data1 == " + cc, "data2", 7);
 
-        mButton.pressedAction().setActionMatcher(onPress);
+//        mButton.pressedAction().setActionMatcher(onPress);
         mButton.pressedAction().setPressureActionMatcher(onVelocity);
         mButton.releasedAction().setActionMatcher(onRelease);
     }
@@ -46,7 +54,7 @@ public class CCButton implements LaunchpadXPad {
 
     @Override
     public void resetColor() {
-        mLight.state().setValue(new BasicColor(ColorTag.INDEX_COLORS[0], 0xB0, new int[]{0}, mCC));
+        mLight.state().setValue(new BasicColor(ColorTag.NULL_COLOR, 0xB0, new int[]{0}, mCC));
     }
 
     @Override

@@ -27,13 +27,12 @@ public class Session {
         customOut = host.getMidiOutPort(1);
 
         noteInput = customIn.createNoteInput("");
+        noteInput.setShouldConsumeEvents(false);
 
         // Switch to Live mode (if not already)
         sendSysex("0e 00");
         // Switch on DAW mode (if not already)
         sendSysex("10 01");
-        // Clear daw mode
-        sendSysex("12 00 00 00");
 
         forceSend();
     }
@@ -93,7 +92,7 @@ public class Session {
         builder.append("f7");
 
         String sysex = builder.toString();
-        System.out.println(sysex);
+//        System.out.println(sysex);
         dawOut.sendSysex(sysex);
     }
 

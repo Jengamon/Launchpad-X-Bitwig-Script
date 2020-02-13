@@ -14,7 +14,7 @@ public class SessionMode extends AbstractMode {
     @Override
     public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
         int nid = surface.novation().id();
-        surface.novation().light().state().setValue(new BasicColor(new ColorTag(67, 54, 32), 0x90, new int[]{1}, nid));
+        surface.novation().light().state().setValue(new BasicColor(new ColorTag(67, 54, 32), 0xB0, new int[]{1}, nid));
         return new ArrayList<>();
     }
 }

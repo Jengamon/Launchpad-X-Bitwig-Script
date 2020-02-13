@@ -13,7 +13,10 @@ import io.github.jengamon.novation.reactive.modes.SessionMode;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class LaunchpadXExtension extends ControllerExtension
 {
@@ -32,6 +35,10 @@ public class LaunchpadXExtension extends ControllerExtension
    {
       final ControllerHost host = getHost();
 
+      Preferences prefs = host.getPreferences();
+      BooleanValue mTrackUploadValues = prefs.getBooleanSetting("Upload Track Notes?", "Behavior", true);
+      SettableRangedValue mUploadChannel = prefs.getNumberSetting("Upload Channel", "Behavior", 0.0, 15.0, 1.0, "MIDI", 0.0);
+
       // Replace System.out and System.err with ones that should actually work
       System.setOut(new PrintStream(new HostOutputStream(host)));
       System.setErr(new PrintStream(new HostErrorOutputStream(host)));
@@ -41,6 +48,22 @@ public class LaunchpadXExtension extends ControllerExtension
       mSurface = host.createHardwareSurface();
       CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
       CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
+
+      final List<PlayingNote>[] previous = new List[]{new ArrayList<>()};
+      mCursorTrack.playingNotes().addValueObserver(notes -> {
+         if(!mTrackUploadValues.get()) return;
+         int channel = (int)mUploadChannel.getRaw();
+         List<PlayingNote> playingNotes = new ArrayList<>();
+         Collections.addAll(playingNotes, notes);
+         previous[0].removeAll(playingNotes);
+         for(PlayingNote note : previous[0]) {
+            mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x80 | channel, note.pitch(), note.velocity());
+         }
+         for(PlayingNote note : notes) {
+            mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x90 | channel, note.pitch(), note.velocity());
+         }
+         previous[0] = playingNotes;
+      });
 
       // Create surface buttons and their lights
       mSurface.setPhysicalSize(241, 241);
@@ -72,6 +95,7 @@ public class LaunchpadXExtension extends ControllerExtension
 
       mSession.setMidiCallback(ChannelType.DAW, data -> onMidi0(data));
       mSession.setSysexCallback(ChannelType.DAW, data -> onSysex0(data));
+      mSession.setMidiCallback(ChannelType.CUSTOM, data -> onMidi1(data));
 
       // TODO: Perform your driver initialization here.
       // For now just show a popup notification for verification that it is running.
@@ -109,11 +133,12 @@ public class LaunchpadXExtension extends ControllerExtension
       mSurface.invalidateHardwareOutputState();
    }
    
-//   /** Called when we receive short MIDI message on port 1. */
-//   private void onMidi1(ShortMidiMessage msg)
-//   {
-//   }
-//
+   /** Called when we receive short MIDI message on port 1. */
+   private void onMidi1(ShortMidiMessage msg)
+   {
+
+   }
+
 //   /** Called when we receive sysex MIDI message on port 1. */
 //   private void onSysex1(final String data)
 //   {
