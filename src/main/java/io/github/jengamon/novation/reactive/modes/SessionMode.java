@@ -112,6 +112,8 @@ public class SessionMode extends AbstractMode {
                 BooleanSyncWrapper isSoloed = new BooleanSyncWrapper(track.solo(), surf, host);
                 BooleanSyncWrapper isStopped = new BooleanSyncWrapper(track.isStopped(), surf, host);
                 BooleanSyncWrapper trackExists = new BooleanSyncWrapper(track.exists(), surf, host);
+                BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
+                BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
                 int finalJ = j;
                 // Extract the playback state
                 Value<IntegerValueChangedCallback> playbackStateValue = new Value<IntegerValueChangedCallback>() {
@@ -163,7 +165,9 @@ public class SessionMode extends AbstractMode {
                 But we want
                 [scene][track] displayed, so we manually transpose the arrays
                  */
-                padLights[j][i] = new SessionPadLight(i, j, bpm, padMode, color, armed, sceneExists, playbackState, isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists);
+                padLights[j][i] = new SessionPadLight(i, j, bpm, padMode, color, armed,
+                        sceneExists, playbackState, isQueued, trackEnabled,
+                        isMuted, isSoloed, isStopped, trackExists, hasNoteInput, hasAudioInput);
                 SessionPadAction action = new SessionPadAction(i, j, padMode, slot, track, trackEnabled);
                 padActions[j][i] = host.createAction(action, action);
             }

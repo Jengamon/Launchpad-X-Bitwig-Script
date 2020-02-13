@@ -28,12 +28,15 @@ public class SessionPadLight extends SessionSendableLightState {
     private BooleanSyncWrapper mIsSoloed;
     private BooleanSyncWrapper mIsStopped;
     private BooleanSyncWrapper mTrackExists;
+    private BooleanSyncWrapper mHasNoteInput;
+    private BooleanSyncWrapper mHasAudioInput;
     private int mTrack;
     private int mScene;
 
     public SessionPadLight(int x, int y, RangedValueSyncWrapper bpm, AtomicReference<SessionPadMode> padMode, ColorSyncWrapper baseColor, BooleanSyncWrapper armed,
                            BooleanSyncWrapper sceneExists, IntegerSyncWrapper playbackState, BooleanSyncWrapper isQueued, BooleanSyncWrapper isTrackEnabled,
-                           BooleanSyncWrapper isMuted, BooleanSyncWrapper isSoloed, BooleanSyncWrapper isStopped, BooleanSyncWrapper trackExists) {
+                           BooleanSyncWrapper isMuted, BooleanSyncWrapper isSoloed, BooleanSyncWrapper isStopped, BooleanSyncWrapper trackExists,
+                           BooleanSyncWrapper hasNoteInput, BooleanSyncWrapper hasAudioInput) {
         mTrack = x;
         mScene = y;
         mBaseColor = baseColor;
@@ -47,6 +50,8 @@ public class SessionPadLight extends SessionSendableLightState {
         mIsSoloed = isSoloed;
         mIsStopped = isStopped;
         mTrackExists = trackExists;
+        mHasAudioInput = hasAudioInput;
+        mHasNoteInput = hasNoteInput;
         mBPM = bpm;
     }
 
@@ -80,8 +85,10 @@ public class SessionPadLight extends SessionSendableLightState {
                 if(mIsTrackEnabled.get() && mTrackExists.get()) {
                     if(mArmed.get()) {
                         return new ColorTag(0xff, 0x61, 0x61);
-                    } else {
+                    } else if(mHasNoteInput.get() || mHasAudioInput.get()) {
                         return new ColorTag(0xaa, 0x61, 0x61);
+                    } else {
+                        return new ColorTag(0, 0, 0);
                     }
                 } else {
                     return new ColorTag(0, 0, 0);

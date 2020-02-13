@@ -150,7 +150,11 @@ public class MixerMode extends AbstractMode {
                 };
                 IntegerSyncWrapper playbackState = new IntegerSyncWrapper(playbackStateValue, surf, host);
                 BooleanSyncWrapper isQueued = new BooleanSyncWrapper(isQueuedValue, surf, host);
-                mixerLights[j][i] = new SessionPadLight(i, j, bpm, otherPadMode, color, armed, sceneExists, playbackState, isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists);
+                BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
+                BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
+                mixerLights[j][i] = new SessionPadLight(i, j, bpm, otherPadMode, color, armed,
+                        sceneExists, playbackState, isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists,
+                        hasNoteInput, hasAudioInput);
                 SessionPadAction action = new SessionPadAction(i, j, otherPadMode, slot, track, trackEnabled);
                 mixerPads[j][i] = host.createAction(action, action);
             }
@@ -210,7 +214,10 @@ public class MixerMode extends AbstractMode {
             };
             IntegerSyncWrapper playbackState = new IntegerSyncWrapper(playbackStateValue, surf, host);
             BooleanSyncWrapper isQueued = new BooleanSyncWrapper(isQueuedValue, surf, host);
-            mixerLights[7][i] = new SessionPadLight(i, 7, bpm, lastRowMode, color, armed, sceneExists, playbackState, isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists);
+            BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
+            BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
+            mixerLights[7][i] = new SessionPadLight(i, 7, bpm, lastRowMode, color, armed, sceneExists, playbackState,
+                    isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists, hasNoteInput, hasAudioInput);
             SessionPadAction action = new SessionPadAction(i, 7, lastRowMode, slot, track, trackEnabled);
             mixerPads[7][i] = host.createAction(action, action);
         }
