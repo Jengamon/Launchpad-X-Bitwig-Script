@@ -53,6 +53,7 @@ public class ColorTag {
         INDEX_COLORS.put("b36161", 0x7);
         INDEX_COLORS.put("61ff61", 0x15);
         INDEX_COLORS.put("6161ff", 0x2d);
+        INDEX_COLORS.put("cc61fc", 0x51);
         INDEX_COLORS.put("aa6161", 0x79);
     }
 

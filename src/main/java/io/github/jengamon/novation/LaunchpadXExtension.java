@@ -8,6 +8,7 @@ import io.github.jengamon.novation.internal.HostErrorOutputStream;
 import io.github.jengamon.novation.internal.HostOutputStream;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.SessionSendableLightState;
+import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
 import io.github.jengamon.novation.reactive.modes.DrumPadMode;
 import io.github.jengamon.novation.reactive.modes.MixerMode;
 import io.github.jengamon.novation.reactive.modes.SessionMode;
@@ -40,10 +41,11 @@ public class LaunchpadXExtension extends ControllerExtension
 
       Preferences prefs = host.getPreferences();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
-      BooleanValue mTrackUploadValues = prefs.getBooleanSetting("Upload Track Notes?", "Behavior", true);
+      BooleanValue mTrackUploadValues = prefs.getBooleanSetting("Upload Track Notes?", "Midi Behavior", true);
       BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
+      BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
-      SettableRangedValue mUploadChannel = prefs.getNumberSetting("Upload Channel", "Behavior", 0.0, 15.0, 1.0, "", 0.0);
+      SettableRangedValue mUploadChannel = prefs.getNumberSetting("Upload Channel", "Midi Behavior", 0.0, 15.0, 1.0, "", 0.0);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
       EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
 
@@ -58,33 +60,33 @@ public class LaunchpadXExtension extends ControllerExtension
       CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
       CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
       TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
-      TrackBank mMixerTrackBank = host.createTrackBank(8, 8, 0, false);
+//      TrackBank mMixerTrackBank = host.createTrackBank(8, 8, 0, false);
 
       // Setup track bank following
       SettableIntegerValue stbpos = mSessionTrackBank.scrollPosition();
-      SettableIntegerValue mtbpos = mMixerTrackBank.scrollPosition();
+//      SettableIntegerValue mtbpos = mMixerTrackBank.scrollPosition();
       IntegerValue stbcc = mSessionTrackBank.channelCount();
-      IntegerValue mtbcc = mMixerTrackBank.channelCount();
+//      IntegerValue mtbcc = mMixerTrackBank.channelCount();
       stbpos.markInterested(); stbcc.markInterested();
-      mtbpos.markInterested(); mtbcc.markInterested();
+//      mtbpos.markInterested(); mtbcc.markInterested();
       AtomicBoolean followCursor = new AtomicBoolean(false);
       mFollowCursorTrack.addValueObserver(followCursor::set);
       mCursorTrack.position().addValueObserver(new_pos -> {
          if(followCursor.get()) {
             // Check if it is in bounds
             int stbposition = stbpos.get();
-            int mtbposition = mtbpos.get();
+//            int mtbposition = mtbpos.get();
             boolean stbib = new_pos > stbposition && new_pos < (stbposition + 8);
-            boolean mtbib = new_pos > mtbposition && new_pos < (mtbposition + 8);
+//            boolean mtbib = new_pos > mtbposition && new_pos < (mtbposition + 8);
             System.out.println(stbcc.get() + " "  + mSessionTrackBank.getSizeOfBank());
             if(!stbib) {
                int nstbposition = Math.max(0, Math.min(stbcc.get() - mSessionTrackBank.getCapacityOfBank(), new_pos));
                stbpos.set(nstbposition);
             }
-            if(!mtbib) {
-               int nmtbposition = Math.max(0, Math.min(mtbcc.get() - mMixerTrackBank.getCapacityOfBank(), new_pos));
-               mtbpos.set(nmtbposition);
-            }
+//            if(!mtbib) {
+//               int nmtbposition = Math.max(0, Math.min(mtbcc.get() - mMixerTrackBank.getCapacityOfBank(), new_pos));
+//               mtbpos.set(nmtbposition);
+//            }
          }
       });
 
@@ -112,13 +114,15 @@ public class LaunchpadXExtension extends ControllerExtension
          previous[0] = playingNotes;
       });
 
+      BooleanSyncWrapper pulseSessionPads = new BooleanSyncWrapper(mPulseSessionPads, mSurface, host);
+
       // Create surface buttons and their lights
       mSurface.setPhysicalSize(241, 241);
       mLSurface = new LaunchpadXSurface(host, mSession, mSurface);
       mMachine = new ModeMachine();
-      mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mSurface, host));
+      mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mSurface, host, pulseSessionPads));
       mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mSurface, mCursorDevice));
-      mMachine.register(Mode.MIXER, new MixerMode(host, mSession, mSurface, mMixerTrackBank));
+      mMachine.register(Mode.MIXER, new MixerMode(host, mTransport, mSession, mSurface, mCursorDevice, mSessionTrackBank));
 
       MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
 
