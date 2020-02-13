@@ -1,4 +1,6 @@
-# Jengamon's Launchpad X for Bitwig
+# Jengamon's Launchpad X for Bitwig 
+
+![Java CI](https://github.com/Jengamon/Launchpad-X-Bitwig-Script/workflows/Java%20CI/badge.svg?branch=api-10)
 
 ## Why not DrivenByMoss?
 
