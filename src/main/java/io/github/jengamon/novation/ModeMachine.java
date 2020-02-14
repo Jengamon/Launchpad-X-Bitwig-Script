@@ -37,4 +37,11 @@ public class ModeMachine {
         surface.clear();
         mBindings = mModes.get(mode).onBind(surface);
     }
+
+    public void sendSysex(Session session, byte[] message) {
+        List<String> responses = mModes.get(mMode).processSysex(message);
+        for(String response : responses) {
+            session.sendSysex(response);
+        }
+    }
 }

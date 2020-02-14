@@ -22,7 +22,7 @@ public class Utils {
 
     public static byte[] parseSysex(String sysex) {
         String message = sysex.substring(12, sysex.length() - 2);
-        System.out.println(sysex);
+//        System.out.println(sysex);
         byte[] bytes = new byte[message.length() / 2];
         for(int i = 0; i < bytes.length; i++) {
             bytes[i] = (byte)(Integer.parseInt(message.substring(i * 2, i * 2 + 2), 16) & 0xff);

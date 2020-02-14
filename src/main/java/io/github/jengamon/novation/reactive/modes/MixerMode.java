@@ -5,15 +5,19 @@ import com.bitwig.extension.callback.BooleanValueChangedCallback;
 import com.bitwig.extension.callback.IntegerValueChangedCallback;
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.ColorTag;
+import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.Session;
+import io.github.jengamon.novation.reactive.FaderSendable;
 import io.github.jengamon.novation.reactive.SessionSendableLightState;
 import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.ColorSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.IntegerSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.RangedValueSyncWrapper;
+import io.github.jengamon.novation.reactive.modes.session.MixerSessionPadLight;
 import io.github.jengamon.novation.reactive.modes.session.SessionPadAction;
 import io.github.jengamon.novation.reactive.modes.session.SessionPadLight;
 import io.github.jengamon.novation.reactive.modes.session.SessionPadMode;
+import io.github.jengamon.novation.surface.Fader;
 import io.github.jengamon.novation.surface.LaunchpadXPad;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 import io.github.jengamon.novation.surface.NoteButton;
@@ -27,9 +31,15 @@ import java.util.function.Supplier;
 public class MixerMode extends AbstractMode {
     private AtomicReference<SessionPadMode> lastRowMode = new AtomicReference<>(SessionPadMode.VOLUME);
     private HardwareActionBindable[][] mixerPads = new HardwareActionBindable[8][8];
-    private SessionPadLight[][] mixerLights = new SessionPadLight[8][8];
+    private MixerSessionPadLight[][] mixerLights = new MixerSessionPadLight[8][8];
     private HardwareActionBindable[] scenePads = new HardwareActionBindable[8];
     private MixerSceneLight[] sceneLights = new MixerSceneLight[8];
+
+    private MixerFaderLight[] faderLights = new MixerFaderLight[8];
+    private SettableRangedValue[] volumeActions = new SettableRangedValue[8];
+    private SettableRangedValue[] panActions = new SettableRangedValue[8];
+    private SettableRangedValue[] sendActions = new SettableRangedValue[8];
+    private SettableRangedValue[] controlActions = new SettableRangedValue[8];
 
     private static class MixerSceneLight extends SessionSendableLightState {
         private AtomicReference<SessionPadMode> mPadMode;
@@ -70,7 +80,85 @@ public class MixerMode extends AbstractMode {
         }
     }
 
-    public MixerMode(ControllerHost host, Transport transport, Session session, HardwareSurface surf, CursorDevice mDevice, TrackBank mBank) {
+    private static class MixerFaderLight extends FaderSendable {
+        private static final ColorTag[] CONTROL_TAGS = new ColorTag[] {
+                new ColorTag(0xff, 0x61, 0x61),
+                new ColorTag(0xff, 0xa1, 0x61),
+                new ColorTag(0xff, 0xff, 0x61),
+                new ColorTag(0x61, 0xff, 0x61),
+                new ColorTag(0x61, 0xff, 0xcc),
+                new ColorTag(0x61, 0xee, 0xff),
+                new ColorTag(0xff, 0x61, 0xff),
+                new ColorTag(0xff, 0x61, 0xc2),
+        };
+
+        private AtomicReference<SessionPadMode> mPadMode;
+        private BooleanSyncWrapper mTrackExists;
+        private BooleanSyncWrapper mSendExists;
+        private BooleanSyncWrapper mControlExists;
+        private ColorSyncWrapper mTrackColor;
+        private int mID;
+
+        private MixerFaderLight(int id, AtomicReference<SessionPadMode> padMode, BooleanSyncWrapper trackExists, BooleanSyncWrapper sendExists, BooleanSyncWrapper controlExists, ColorSyncWrapper trackColor) {
+            mPadMode = padMode;
+            mTrackColor = trackColor;
+            mTrackExists = trackExists;
+            mSendExists = sendExists;
+            mControlExists = controlExists;
+            mID = id;
+        }
+
+        @Override
+        public ColorTag faderColor() {
+            switch(mPadMode.get()) {
+                case SENDS:
+                    if(mSendExists.get()) {
+                        return new ColorTag(0xff, 0xff, 0xff);
+                    } else {
+                        return ColorTag.NULL_COLOR;
+                    }
+                case VOLUME:
+                case PAN:
+                    if(mTrackExists.get()) {
+                        return Utils.toTag(mTrackColor.get());
+                    } else {
+                        return ColorTag.NULL_COLOR;
+                    }
+                case CONTROLS:
+                    if(mControlExists.get()) {
+                        return CONTROL_TAGS[mID];
+                    } else {
+                        return ColorTag.NULL_COLOR;
+                    }
+                default:
+                    return ColorTag.NULL_COLOR;
+            }
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return false;
+        }
+    }
+
+    private void setFaderState(LaunchpadXSurface lSurf) {
+        // TODO Get the proper state to determine bipolarity and verticality
+        switch(lastRowMode.get()) {
+            case PAN:
+                lSurf.enableFaders(lastRowMode.get(), false, true);
+                break;
+            case VOLUME:
+            case SENDS:
+            case CONTROLS:
+                lSurf.enableFaders(lastRowMode.get(), true, false);
+                break;
+            default:
+                lSurf.disableFaders();
+                break;
+        }
+    }
+
+    public MixerMode(ControllerHost host, Transport transport, LaunchpadXSurface lSurf, Session session, HardwareSurface surf, CursorTrack mTrack, CursorDevice mDevice, TrackBank mBank) {
         int[] ids = new int[]{89, 79, 69, 59, 49, 39, 29, 19};
         SessionPadMode[] targets = new SessionPadMode[]{
                 SessionPadMode.VOLUME,
@@ -90,6 +178,7 @@ public class MixerMode extends AbstractMode {
             int finalI = i;
             scenePads[i] = host.createAction(() -> {
                 lastRowMode.set(targets[finalI]);
+                setFaderState(lSurf);
                 surf.invalidateHardwareOutputState();
                 host.requestFlush();
             }, () -> "Press Scene button " + finalI);
@@ -97,7 +186,7 @@ public class MixerMode extends AbstractMode {
         // Setup session rows
         for(int j = 0; j < 7; j++) {
             mixerPads[j] = new HardwareActionBindable[8];
-            mixerLights[j] = new SessionPadLight[8];
+            mixerLights[j] = new MixerSessionPadLight[8];
             for(int i = 0; i < 8; i++) {
                 Track track = mBank.getItemAt(i);
                 ClipLauncherSlotBank slotBank = track.clipLauncherSlotBank();
@@ -152,16 +241,16 @@ public class MixerMode extends AbstractMode {
                 BooleanSyncWrapper isQueued = new BooleanSyncWrapper(isQueuedValue, surf, host);
                 BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
                 BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
-                mixerLights[j][i] = new SessionPadLight(i, j, bpm, otherPadMode, color, armed,
+                mixerLights[j][i] = new MixerSessionPadLight(i, j, bpm, otherPadMode, color, armed,
                         sceneExists, playbackState, isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists,
-                        hasNoteInput, hasAudioInput);
+                        hasNoteInput, hasAudioInput, lastRowMode);
                 SessionPadAction action = new SessionPadAction(i, j, otherPadMode, slot, track, trackEnabled);
                 mixerPads[j][i] = host.createAction(action, action);
             }
         }
 
         mixerPads[7] = new HardwareActionBindable[8];
-        mixerLights[7] = new SessionPadLight[8];
+        mixerLights[7] = new MixerSessionPadLight[8];
         for(int i = 0; i < 8; i++) {
             Track track = mBank.getItemAt(i);
             ClipLauncherSlotBank slotBank = track.clipLauncherSlotBank();
@@ -216,16 +305,34 @@ public class MixerMode extends AbstractMode {
             BooleanSyncWrapper isQueued = new BooleanSyncWrapper(isQueuedValue, surf, host);
             BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
             BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
-            mixerLights[7][i] = new SessionPadLight(i, 7, bpm, lastRowMode, color, armed, sceneExists, playbackState,
-                    isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists, hasNoteInput, hasAudioInput);
+            mixerLights[7][i] = new MixerSessionPadLight(i, 7, bpm, lastRowMode, color, armed, sceneExists, playbackState,
+                    isQueued, trackEnabled, isMuted, isSoloed, isStopped, trackExists, hasNoteInput, hasAudioInput, lastRowMode);
             SessionPadAction action = new SessionPadAction(i, 7, lastRowMode, slot, track, trackEnabled);
             mixerPads[7][i] = host.createAction(action, action);
+        }
+
+        CursorRemoteControlsPage controls = mTrack.createCursorDevice().createCursorRemoteControlsPage(8);
+        for(int i = 0; i < 8; i++) {
+            Parameter volume = mBank.getItemAt(i).volume();
+            Parameter pan = mBank.getItemAt(i).pan();
+            Parameter send = mTrack.sendBank().getItemAt(i);
+            Parameter control = controls.getParameter(i);
+            volumeActions[i] = volume;
+            panActions[i] = pan;
+            sendActions[i] = send;
+            controlActions[i] = control;
+            BooleanSyncWrapper trackExists = new BooleanSyncWrapper(mBank.getItemAt(i).exists(), surf, host);
+            BooleanSyncWrapper sendExists = new BooleanSyncWrapper(mTrack.sendBank().getItemAt(i).exists(), surf, host);
+            BooleanSyncWrapper controlExists = new BooleanSyncWrapper(controls.getParameter(i).exists(), surf, host);
+            ColorSyncWrapper trackColor = new ColorSyncWrapper(mBank.getItemAt(i).color(), surf, host);
+            faderLights[i] = new MixerFaderLight(i, lastRowMode, trackExists, sendExists, controlExists, trackColor);
         }
     }
 
     @Override
     public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
         List<HardwareBinding> bindings = new ArrayList<>();
+        setFaderState(surface);
         BasicColor novationColor = new BasicColor(new ColorTag(204, 97, 252), 0xB0, new int[]{0}, 99);
         surface.novation().light().state().setValue(novationColor);
         for(int i = 0; i < 8; i++) {
@@ -240,6 +347,20 @@ public class MixerMode extends AbstractMode {
             LaunchpadXPad sceneButton = surface.scenes()[i];
             bindings.add(sceneButton.button().pressedAction().setBinding(scenePads[i]));
             sceneButton.light().state().setValue(sceneLights[i]);
+        }
+        for(int i = 0; i < 8; i++) {
+            Fader volumeFader = surface.volumeFaders()[i];
+            Fader panFader = surface.panFaders()[i];
+            Fader sendFader = surface.sendFaders()[i];
+            Fader controlFader = surface.controlFaders()[i];
+            bindings.add(volumeActions[i].addBinding(volumeFader.fader()));
+            volumeFader.light().state().setValue(faderLights[i]);
+            bindings.add(panActions[i].addBinding(panFader.fader()));
+            panFader.light().state().setValue(faderLights[i]);
+            bindings.add(sendFader.fader().addBindingWithRange(sendActions[i], 0, 1));
+            sendFader.light().state().setValue(faderLights[i]);
+            bindings.add(controlFader.fader().addBindingWithRange(controlActions[i], 0, 1));
+            controlFader.light().state().setValue(faderLights[i]);
         }
         return bindings;
     }

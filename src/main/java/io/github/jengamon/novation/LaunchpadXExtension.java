@@ -122,7 +122,7 @@ public class LaunchpadXExtension extends ControllerExtension
       mMachine = new ModeMachine();
       mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mSurface, host, pulseSessionPads));
       mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mSurface, mCursorDevice));
-      mMachine.register(Mode.MIXER, new MixerMode(host, mTransport, mSession, mSurface, mCursorDevice, mSessionTrackBank));
+      mMachine.register(Mode.MIXER, new MixerMode(host, mTransport, mLSurface, mSession, mSurface, mCursorTrack, mCursorDevice, mSessionTrackBank));
 
       MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
 
@@ -190,19 +190,22 @@ public class LaunchpadXExtension extends ControllerExtension
 
       AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
       HardwareActionBindable mSessionAction = host.createAction(() -> {
-         mSession.sendSysex("00 00");
          switch(mMachine.mode()) {
             case SESSION:
                lastSessionMode.set(Mode.MIXER);
                mMachine.setMode(mLSurface, Mode.MIXER);
                break;
             case MIXER:
+               mSession.sendSysex("00 00");
                lastSessionMode.set(Mode.SESSION);
                mMachine.setMode(mLSurface, Mode.SESSION);
                break;
             case DRUM:
             case UNKNOWN:
                mMachine.setMode(mLSurface, lastSessionMode.get());
+               if(lastSessionMode.get() == Mode.SESSION) {
+                  mSession.sendSysex("00 00");
+               }
                break;
             default:
                throw new RuntimeException("Unknown mode " + mMachine.mode());
@@ -263,7 +266,8 @@ public class LaunchpadXExtension extends ControllerExtension
    private void onSysex0(final String data)
    {
       byte[] sysex = Utils.parseSysex(data);
-      System.out.println(Arrays.toString(sysex));
+//      System.out.println(Arrays.toString(sysex));
+      mMachine.sendSysex(mSession, sysex);
       mSurface.invalidateHardwareOutputState();
    }
    

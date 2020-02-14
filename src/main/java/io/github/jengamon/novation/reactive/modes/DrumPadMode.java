@@ -17,8 +17,10 @@ import io.github.jengamon.novation.surface.NoteButton;
 import io.github.jengamon.novation.surface.ihls.BasicColor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleConsumer;
 import java.util.function.Supplier;
 
@@ -85,12 +87,12 @@ public class DrumPadMode extends AbstractMode {
         private IntegerSyncWrapper mScroll;
         private BooleanSyncWrapper mHasContent;
         private int mOffset;
-        private int mChannel;
+        private AtomicInteger mChannel;
 
-        private PlayAction(NoteInput noteOut, int offset, BooleanSyncWrapper hasContent, IntegerSyncWrapper scroll) {
+        private PlayAction(NoteInput noteOut, int offset, BooleanSyncWrapper hasContent, IntegerSyncWrapper scroll, AtomicInteger channel) {
             mNoteOut = noteOut;
             mOffset = offset;
-            mChannel = 0;
+            mChannel = channel;
             mScroll = scroll;
             mHasContent = hasContent;
         }
@@ -104,7 +106,7 @@ public class DrumPadMode extends AbstractMode {
         public void accept(double value) {
 //            System.out.println(get() + " " + mHasContent + " " + value);
             if(mHasContent.get()) {
-                mNoteOut.sendRawMidiEvent(0x90 | (0xF & mChannel), mScroll.get() + mOffset, (int)Math.round(value * 127));
+                mNoteOut.sendRawMidiEvent(0x90 | (0xF & mChannel.get()), mScroll.get() + mOffset, (int)Math.round(value * 127));
             }
         }
     }
@@ -113,12 +115,12 @@ public class DrumPadMode extends AbstractMode {
         private NoteInput mNoteOut;
         private IntegerSyncWrapper mScroll;
         private int mOffset;
-        private int mChannel;
+        private AtomicInteger mChannel;
 
-        private ReleaseAction(NoteInput noteOut, int offset, IntegerSyncWrapper scroll) {
+        private ReleaseAction(NoteInput noteOut, int offset, IntegerSyncWrapper scroll, AtomicInteger channel) {
             mNoteOut = noteOut;
             mOffset = offset;
-            mChannel = 0;
+            mChannel = channel;
             mScroll = scroll;
         }
 
@@ -130,7 +132,7 @@ public class DrumPadMode extends AbstractMode {
         @Override
         public void run() {
 //            System.out.println(get() + " " + value);
-            mNoteOut.sendRawMidiEvent(0x80 | (0xF & mChannel), mScroll.get() + mOffset, 0);
+            mNoteOut.sendRawMidiEvent(0x80 | (0xF & mChannel.get()), mScroll.get() + mOffset, 0);
         }
     }
 
@@ -138,14 +140,14 @@ public class DrumPadMode extends AbstractMode {
         private NoteInput mNoteOut;
         private IntegerSyncWrapper mScroll;
         private int mOffset;
-        private int mChannel;
+        private AtomicInteger mChannel;
         private boolean mHasContent;
 
-        private AftertouchExpression(NoteInput noteOut, int offset, IntegerSyncWrapper scroll) {
+        private AftertouchExpression(NoteInput noteOut, int offset, IntegerSyncWrapper scroll, AtomicInteger channel) {
             mNoteOut = noteOut;
             mOffset = offset;
             mScroll = scroll;
-            mChannel = 0;
+            mChannel = channel;
             mHasContent = false;
         }
 
@@ -153,7 +155,7 @@ public class DrumPadMode extends AbstractMode {
         public void accept(double value) {
             if(mHasContent) {
                 System.out.println(value);
-                mNoteOut.sendRawMidiEvent(0xA0 | (0xF & mChannel), mScroll.get() + mOffset, ((int)(value * 127) & 0xFF));
+                mNoteOut.sendRawMidiEvent(0xA0 | (0xF & mChannel.get()), mScroll.get() + mOffset, ((int)(value * 127) & 0xFF));
             }
         }
     }
@@ -234,7 +236,7 @@ public class DrumPadMode extends AbstractMode {
     private AbsoluteHardwarControlBindable[] mAftertouchNote;
     private DrumPadLight[] mDrumPadLights;
 
-    // TODO Switch from primitive types to atomic types
+    private AtomicInteger mChannel = new AtomicInteger(0);
 
     private HardwareActionBindable mUpAction;
     private ArrowLight mUpLight;
@@ -280,14 +282,15 @@ public class DrumPadMode extends AbstractMode {
             NotesSyncWrapper mNotes = new NotesSyncWrapper(mDrumBank.getItemAt(i).playingNotes(), surf, host);
             BooleanSyncWrapper mHasContent = new BooleanSyncWrapper(mDrumBank.getItemAt(i).exists(), surf, host);
             DrumPadLight light = new DrumPadLight(i, mHasContent, mPadColors, mScroll, mNotes);
-            PlayAction pn = new PlayAction(session.noteInput(), i, mHasContent, mScroll);
-            ReleaseAction rn = new ReleaseAction(session.noteInput(), i, mScroll);
-            AftertouchExpression ae = new AftertouchExpression(session.noteInput(), i, mScroll);
+            PlayAction pn = new PlayAction(session.noteInput(), i, mHasContent, mScroll, mChannel);
+            ReleaseAction rn = new ReleaseAction(session.noteInput(), i, mScroll, mChannel);
+            AftertouchExpression ae = new AftertouchExpression(session.noteInput(), i, mScroll, mChannel);
             mDrumPadLights[i] = light;
             mPlayNote[i] = host.createAction(pn, pn);
             mReleaseNote[i] = host.createAction(rn, rn);
             mAftertouchNote[i] = host.createAbsoluteHardwareControlAdjustmentTarget(ae);
         }
+        session.sendSysex("16");
     }
 
     @Override
@@ -314,5 +317,15 @@ public class DrumPadMode extends AbstractMode {
         surface.left().light().state().setValue(mLeftLight);
         surface.right().light().state().setValue(mRightLight);
         return bindings;
+    }
+
+    @Override
+    public List<String> processSysex(byte[] sysex) {
+        List<String> responses = new ArrayList<>();
+        if (sysex[0] == 0x16) {
+            mChannel.set(sysex[4]);
+        }
+        responses.add("16");
+        return responses;
     }
 }
