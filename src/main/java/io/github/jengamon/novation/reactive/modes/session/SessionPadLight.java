@@ -58,7 +58,7 @@ public class SessionPadLight extends SessionSendableLightState {
     public int track() { return mTrack; }
     public int scene() { return mScene; }
 
-    private ColorTag getSolidColor() {
+    ColorTag getSolidColor() {
         ColorTag baseColor = Utils.toTag(mBaseColor.get());
         switch (mPadMode.get()) {
             case SESSION:
@@ -79,7 +79,7 @@ public class SessionPadLight extends SessionSendableLightState {
                         return new ColorTag(0xff, 0x61, 0x61);
                     }
                 } else {
-                    return new ColorTag(0, 0, 0);
+                    return ColorTag.NULL_COLOR;
                 }
             case RECORD:
                 if(mIsTrackEnabled.get() && mTrackExists.get()) {
@@ -88,17 +88,37 @@ public class SessionPadLight extends SessionSendableLightState {
                     } else if(mHasNoteInput.get() || mHasAudioInput.get()) {
                         return new ColorTag(0xaa, 0x61, 0x61);
                     } else {
-                        return new ColorTag(0, 0, 0);
+                        return ColorTag.NULL_COLOR;
                     }
                 } else {
-                    return new ColorTag(0, 0, 0);
+                    return ColorTag.NULL_COLOR;
+                }
+            case SOLO:
+                if(mIsTrackEnabled.get() && mTrackExists.get()) {
+                    if(mIsSoloed.get()) {
+                        return new ColorTag(0xf3, 0xee, 0x61);
+                    } else {
+                        return new ColorTag(0xb3, 0xa1, 0x61);
+                    }
+                } else {
+                    return ColorTag.NULL_COLOR;
+                }
+            case MUTE:
+                if(mIsTrackEnabled.get() && mTrackExists.get()) {
+                    if(mIsMuted.get()) {
+                        return new ColorTag(0xff, 0xa1, 0x61);
+                    } else {
+                        return new ColorTag(0xa1, 0x76, 0x61);
+                    }
+                } else {
+                    return ColorTag.NULL_COLOR;
                 }
             default:
                 return new ColorTag(0, 0, 0);
         }
     }
 
-    private ColorTag getBlinkColor() {
+    ColorTag getBlinkColor() {
         switch(mPadMode.get()) {
             case SESSION:
             case VOLUME:
@@ -132,7 +152,7 @@ public class SessionPadLight extends SessionSendableLightState {
         }
     }
 
-    private ColorTag getPulseColor() {
+    ColorTag getPulseColor() {
         switch(mPadMode.get()) {
             case SESSION:
             case VOLUME:

@@ -51,10 +51,19 @@ public class ColorTag {
         INDEX_COLORS.put("ff6161", 0x5);
         INDEX_COLORS.put("dd6161", 0x6);
         INDEX_COLORS.put("b36161", 0x7);
+        INDEX_COLORS.put("ffff61", 0xd);
         INDEX_COLORS.put("61ff61", 0x15);
+        INDEX_COLORS.put("61ffcc", 0x1d);
+        INDEX_COLORS.put("61eeff", 0x25);
         INDEX_COLORS.put("6161ff", 0x2d);
+        INDEX_COLORS.put("ff61ff", 0x35);
+        INDEX_COLORS.put("ff61c2", 0x39);
         INDEX_COLORS.put("cc61fc", 0x51);
+        INDEX_COLORS.put("a17661", 0x53);
+        INDEX_COLORS.put("ffa161", 0x54);
         INDEX_COLORS.put("aa6161", 0x79);
+        INDEX_COLORS.put("f3ee61", 0x7c);
+        INDEX_COLORS.put("b3a161", 0x7d);
     }
 
     public ColorTag(int red, int green, int blue) {
