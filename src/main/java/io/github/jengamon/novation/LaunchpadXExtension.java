@@ -45,7 +45,6 @@ public class LaunchpadXExtension extends ControllerExtension
       BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
-      SettableRangedValue mUploadChannel = prefs.getNumberSetting("Upload Channel", "Midi Behavior", 0.0, 15.0, 1.0, "", 0.0);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
       EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
 
@@ -98,20 +97,19 @@ public class LaunchpadXExtension extends ControllerExtension
       });
 
       // Set up note uploading
-      final List<PlayingNote>[] previous = new List[]{new ArrayList<>()};
-      mCursorTrack.playingNotes().addValueObserver(notes -> {
+      mCursorTrack.createLauncherCursorClip(0, 0).addNoteStepObserver(note -> {
          if(!mTrackUploadValues.get()) return;
-         int channel = (int)mUploadChannel.getRaw();
-         List<PlayingNote> playingNotes = new ArrayList<>();
-         Collections.addAll(playingNotes, notes);
-         previous[0].removeAll(playingNotes);
-         for(PlayingNote note : previous[0]) {
-            mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x80 | channel, note.pitch(), note.velocity());
+         switch(note.state()) {
+            case NoteOn:
+               mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x90 | note.channel(), note.y(), (int) note.velocity() * 127);
+               break;
+            case NoteSustain:
+               mSession.midiOut(ChannelType.CUSTOM).sendMidi(0xA0 | note.channel(), note.y(), (int) note.velocity() * 127);
+               break;
+            case Empty:
+               mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x80 | note.channel(), note.y(), (int) note.velocity() * 127);
+               break;
          }
-         for(PlayingNote note : notes) {
-            mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x90 | channel, note.pitch(), note.velocity());
-         }
-         previous[0] = playingNotes;
       });
 
       BooleanSyncWrapper pulseSessionPads = new BooleanSyncWrapper(mPulseSessionPads, mSurface, host);
