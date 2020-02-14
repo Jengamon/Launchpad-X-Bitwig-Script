@@ -9,9 +9,8 @@ import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.SessionSendableLightState;
 import io.github.jengamon.novation.reactive.atomics.*;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadAction;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadLight;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadMode;
+import io.github.jengamon.novation.reactive.modes.session.*;
+import io.github.jengamon.novation.surface.LaunchpadXPad;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 import io.github.jengamon.novation.surface.NoteButton;
 import io.github.jengamon.novation.surface.ihls.BasicColor;
@@ -73,6 +72,8 @@ public class SessionMode extends AbstractMode {
     private SceneLight[] sceneLights;
     private SessionPadLight[][] padLights;
     private HardwareActionBindable[][] padActions;
+    private SessionScrollLight[] arrowLights;
+    private HardwareBindable[] arrowActions;
 
     public SessionMode(TrackBank bank, Transport transport, HardwareSurface surf, ControllerHost host, BooleanSyncWrapper pulseSessionPads) {
         mBank = bank;
@@ -172,6 +173,25 @@ public class SessionMode extends AbstractMode {
                 padActions[j][i] = host.createAction(action, action);
             }
         }
+        arrowLights = new SessionScrollLight[4];
+        arrowActions = new HardwareBindable[4];
+        SettableIntegerValue trackScrollPos = mBank.scrollPosition();
+        SettableIntegerValue sceneScrollPos = mBank.sceneBank().scrollPosition();
+        IntegerSyncWrapper trackScroll = new IntegerSyncWrapper(trackScrollPos, surf, host);
+        IntegerSyncWrapper sceneScroll = new IntegerSyncWrapper(sceneScrollPos, surf, host);
+        IntegerSyncWrapper trackCount = new IntegerSyncWrapper(mBank.channelCount(), surf, host);
+        IntegerSyncWrapper sceneCount = new IntegerSyncWrapper(mBank.sceneBank().itemCount(), surf, host);
+        int[] offset = new int[]{-1, 1, -1, 1};
+        int[] bankSize = new int[]{mBank.sceneBank().getCapacityOfBank(), mBank.sceneBank().getCapacityOfBank(), mBank.getCapacityOfBank(), mBank.getCapacityOfBank()};
+        IntegerSyncWrapper[] scroll = new IntegerSyncWrapper[]{sceneScroll, sceneScroll, trackScroll, trackScroll};
+        IntegerSyncWrapper[] count = new IntegerSyncWrapper[]{sceneCount, sceneCount, trackCount, trackCount};
+        SettableIntegerValue[] pos = new SettableIntegerValue[]{sceneScrollPos, sceneScrollPos, trackScrollPos, trackScrollPos};
+        for(int j = 91; j < 95; j++) {
+            int i = j - 91;
+            arrowLights[i] = new SessionScrollLight(j, offset[i], bankSize[i], scroll[i], count[i], new ColorTag(0xff, 0xa1, 0x61));
+            SessionScrollAction action = new SessionScrollAction(offset[i], bankSize[i], pos[i], scroll[i], count[i]);
+            arrowActions[i] = host.createAction(action, action);
+        }
     }
 
     @Override
@@ -187,11 +207,14 @@ public class SessionMode extends AbstractMode {
             for(int j = 0; j < 8; j++) {
                 NoteButton button = surface.notes()[i][j];
                 button.setButtonMode(NoteButton.Mode.SESSION);
-//                int id = button.id();
-//                System.out.println("" + id + " " + i + " " + j + " " + padLights[i][j].track() + " " + padLights[i][j].scene());
                 bindings.add(button.button().pressedAction().addBinding(padActions[i][j]));
                 button.light().state().setValue(padLights[i][j]);
             }
+        }
+        LaunchpadXPad[] arrows = new LaunchpadXPad[]{surface.up(), surface.down(), surface.left(), surface.right()};
+        for(int i = 0; i < 4; i++) {
+            bindings.add(arrows[i].button().pressedAction().addBinding(arrowActions[i]));
+            arrows[i].light().state().setValue(arrowLights[i]);
         }
         return bindings;
     }
