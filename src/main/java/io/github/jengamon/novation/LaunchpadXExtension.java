@@ -41,7 +41,6 @@ public class LaunchpadXExtension extends ControllerExtension
 
       Preferences prefs = host.getPreferences();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
-      BooleanValue mTrackUploadValues = prefs.getBooleanSetting("Upload Track Notes?", "Midi Behavior", true);
       BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
@@ -93,22 +92,6 @@ public class LaunchpadXExtension extends ControllerExtension
          mSessionTrackBank.sceneBank().setIndication(vb);
          for(int i = 0; i < mSessionTrackBank.getCapacityOfBank(); i++) {
             mSessionTrackBank.getItemAt(i).clipLauncherSlotBank().setIndication(vb);
-         }
-      });
-
-      // Set up note uploading
-      mCursorTrack.createLauncherCursorClip(0, 0).addNoteStepObserver(note -> {
-         if(!mTrackUploadValues.get()) return;
-         switch(note.state()) {
-            case NoteOn:
-               mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x90 | note.channel(), note.y(), (int) note.velocity() * 127);
-               break;
-            case NoteSustain:
-               mSession.midiOut(ChannelType.CUSTOM).sendMidi(0xA0 | note.channel(), note.y(), (int) note.velocity() * 127);
-               break;
-            case Empty:
-               mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x80 | note.channel(), note.y(), (int) note.velocity() * 127);
-               break;
          }
       });
 
