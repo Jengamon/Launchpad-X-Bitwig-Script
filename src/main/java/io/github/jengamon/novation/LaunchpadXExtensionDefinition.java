@@ -29,7 +29,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getVersion()
    {
-      return "0.5";
+      return "0.9";
    }
 
    @Override
