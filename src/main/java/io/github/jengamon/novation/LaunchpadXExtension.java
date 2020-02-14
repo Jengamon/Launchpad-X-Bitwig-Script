@@ -183,10 +183,10 @@ public class LaunchpadXExtension extends ControllerExtension
                break;
             case DRUM:
             case UNKNOWN:
+                if(lastSessionMode.get() == Mode.SESSION) {
+                    mSession.sendSysex("00 00");
+                }
                mMachine.setMode(mLSurface, lastSessionMode.get());
-               if(lastSessionMode.get() == Mode.SESSION) {
-                  mSession.sendSysex("00 00");
-               }
                break;
             default:
                throw new RuntimeException("Unknown mode " + mMachine.mode());
