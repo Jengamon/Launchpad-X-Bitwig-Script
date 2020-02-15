@@ -145,9 +145,9 @@ public class LaunchpadXSurface {
 //            sysexString.append(Utils.toHexString((byte)colors[i]));
             sysexString.append("00 ");
         }
-        refreshFaders();
         mSurface.invalidateHardwareOutputState();
         mSession.sendSysex(sysexString.toString());
+        refreshFaders();
         mSession.sendSysex("00 0D");
     }
 
