@@ -172,6 +172,11 @@ public class MixerMode extends AbstractMode {
         };
         AtomicReference<SessionPadMode> otherPadMode = new AtomicReference<>(SessionPadMode.SESSION);
         RangedValueSyncWrapper bpm = new RangedValueSyncWrapper(transport.tempo().modulatedValue(), surf, host);
+        mTrack.position().addValueObserver(pos -> {
+            lSurf.refreshFaders();
+            surf.invalidateHardwareOutputState();
+            host.requestFlush();
+        });
 
         for(int i = 0; i < 8; i++) {
             sceneLights[i] = new MixerSceneLight(lastRowMode, targets[i], bpm, ids[i]);
