@@ -211,9 +211,9 @@ public class LaunchpadXExtension extends ControllerExtension
 
 //      mSession.sendSysex("00");
 
-      mSession.setMidiCallback(ChannelType.DAW, data -> onMidi0(data));
-      mSession.setSysexCallback(ChannelType.DAW, data -> onSysex0(data));
-      mSession.setMidiCallback(ChannelType.CUSTOM, data -> onMidi1(data));
+      mSession.setMidiCallback(ChannelType.DAW, this::onMidi0);
+      mSession.setSysexCallback(ChannelType.DAW, this::onSysex0);
+      mSession.setMidiCallback(ChannelType.CUSTOM, this::onMidi1);
 
       // TODO: Perform your driver initialization here.
       // For now just show a popup notification for verification that it is running.
@@ -255,7 +255,7 @@ public class LaunchpadXExtension extends ControllerExtension
    /** Called when we receive short MIDI message on port 1. */
    private void onMidi1(ShortMidiMessage msg)
    {
-
+      // System.out.println("C: " + Utils.toHexString((byte)msg.getStatusByte()) + Utils.toHexString((byte)msg.getData1()) + Utils.toHexString((byte)msg.getData2()));
    }
 
 //   /** Called when we receive sysex MIDI message on port 1. */
