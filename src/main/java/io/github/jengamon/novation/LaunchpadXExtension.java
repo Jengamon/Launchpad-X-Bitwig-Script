@@ -41,11 +41,9 @@ public class LaunchpadXExtension extends ControllerExtension
 
       Preferences prefs = host.getPreferences();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
-      BooleanValue mTrackUploadValues = prefs.getBooleanSetting("Upload Track Notes?", "Midi Behavior", true);
       BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
-      SettableRangedValue mUploadChannel = prefs.getNumberSetting("Upload Channel", "Midi Behavior", 0.0, 15.0, 1.0, "", 0.0);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
       EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
 
@@ -95,23 +93,6 @@ public class LaunchpadXExtension extends ControllerExtension
          for(int i = 0; i < mSessionTrackBank.getCapacityOfBank(); i++) {
             mSessionTrackBank.getItemAt(i).clipLauncherSlotBank().setIndication(vb);
          }
-      });
-
-      // Set up note uploading
-      final List<PlayingNote>[] previous = new List[]{new ArrayList<>()};
-      mCursorTrack.playingNotes().addValueObserver(notes -> {
-         if(!mTrackUploadValues.get()) return;
-         int channel = (int)mUploadChannel.getRaw();
-         List<PlayingNote> playingNotes = new ArrayList<>();
-         Collections.addAll(playingNotes, notes);
-         previous[0].removeAll(playingNotes);
-         for(PlayingNote note : previous[0]) {
-            mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x80 | channel, note.pitch(), note.velocity());
-         }
-         for(PlayingNote note : notes) {
-            mSession.midiOut(ChannelType.CUSTOM).sendMidi(0x90 | channel, note.pitch(), note.velocity());
-         }
-         previous[0] = playingNotes;
       });
 
       BooleanSyncWrapper pulseSessionPads = new BooleanSyncWrapper(mPulseSessionPads, mSurface, host);
@@ -202,10 +183,10 @@ public class LaunchpadXExtension extends ControllerExtension
                break;
             case DRUM:
             case UNKNOWN:
+                if(lastSessionMode.get() == Mode.SESSION) {
+                    mSession.sendSysex("00 00");
+                }
                mMachine.setMode(mLSurface, lastSessionMode.get());
-               if(lastSessionMode.get() == Mode.SESSION) {
-                  mSession.sendSysex("00 00");
-               }
                break;
             default:
                throw new RuntimeException("Unknown mode " + mMachine.mode());
@@ -230,9 +211,9 @@ public class LaunchpadXExtension extends ControllerExtension
 
 //      mSession.sendSysex("00");
 
-      mSession.setMidiCallback(ChannelType.DAW, data -> onMidi0(data));
-      mSession.setSysexCallback(ChannelType.DAW, data -> onSysex0(data));
-      mSession.setMidiCallback(ChannelType.CUSTOM, data -> onMidi1(data));
+      mSession.setMidiCallback(ChannelType.DAW, this::onMidi0);
+      mSession.setSysexCallback(ChannelType.DAW, this::onSysex0);
+      mSession.setMidiCallback(ChannelType.CUSTOM, this::onMidi1);
 
       // TODO: Perform your driver initialization here.
       // For now just show a popup notification for verification that it is running.
@@ -274,7 +255,7 @@ public class LaunchpadXExtension extends ControllerExtension
    /** Called when we receive short MIDI message on port 1. */
    private void onMidi1(ShortMidiMessage msg)
    {
-
+      // System.out.println("C: " + Utils.toHexString((byte)msg.getStatusByte()) + Utils.toHexString((byte)msg.getData1()) + Utils.toHexString((byte)msg.getData2()));
    }
 
 //   /** Called when we receive sysex MIDI message on port 1. */

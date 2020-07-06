@@ -26,7 +26,7 @@ public class Session {
         customIn = host.getMidiInPort(1);
         customOut = host.getMidiOutPort(1);
 
-        noteInput = customIn.createNoteInput("");
+        noteInput = customIn.createNoteInput("", "??????");
         noteInput.setShouldConsumeEvents(false);
 
         // Switch to Live mode (if not already)
@@ -107,8 +107,9 @@ public class Session {
     }
 
     public void forceSend() {
-        for(int i = 0; i < 50; i++) {
-            sendMidi(0, 0, 0);
-        }
+//        for(int i = 0; i < 50; i++) {
+//            sendMidi(0, 0, 0);
+//        }
+        // NOOP for 3.2 beta onwards hopefully as they might have fixed the bug this was meant to solve.
     }
 }

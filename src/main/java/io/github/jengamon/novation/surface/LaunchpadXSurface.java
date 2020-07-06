@@ -147,6 +147,11 @@ public class LaunchpadXSurface {
         }
         mSurface.invalidateHardwareOutputState();
         mSession.sendSysex(sysexString.toString());
+        refreshFaders();
+        mSession.sendSysex("00 0D");
+    }
+
+    public void refreshFaders() {
         for(int i = 0; i < 8; i++) {
             Fader volFader = mVolumeFaders[i];
             Fader panFader = mPanFaders[i];
@@ -157,7 +162,6 @@ public class LaunchpadXSurface {
             mSession.sendMidi(0xB4, sendFader.id(), (int)Math.round(sendFader.fader().targetValue().get() * 127));
             mSession.sendMidi(0xB4, controlFader.id(), (int)Math.round(controlFader.fader().targetValue().get() * 127));
         }
-        mSession.sendSysex("00 0D");
     }
 
     public void disableFaders() {
