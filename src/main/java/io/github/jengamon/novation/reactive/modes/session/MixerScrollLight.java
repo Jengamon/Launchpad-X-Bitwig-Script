@@ -30,8 +30,15 @@ public class MixerScrollLight extends SessionSendableLightState {
     // Bank size that we are looking at.
     private int mSendBankSize;
 
+    // Deals with session view modes (STOP, MUTE, SOLO, RECORD)
+    private IntegerSyncWrapper mSBankScroll;
+    private IntegerSyncWrapper mSBankCount;
+    // bank size we are looking at.
+    private int mSBankSize;
+
     public MixerScrollLight(int id, int scrollOffset, ColorTag tag, int bankSize, IntegerSyncWrapper bankScroll, IntegerSyncWrapper bankCount,
-                            int sendBankSize, IntegerSyncWrapper sendScroll, IntegerSyncWrapper sendCount, AtomicReference<SessionPadMode> lastRowMode) {
+                            int sendBankSize, IntegerSyncWrapper sendScroll, IntegerSyncWrapper sendCount,
+                            int sbankSize, IntegerSyncWrapper sbankScroll, IntegerSyncWrapper sbankCount, AtomicReference<SessionPadMode> lastRowMode) {
         mID = id;
         mScrollOffset = scrollOffset;
         mTag = tag;
@@ -43,6 +50,10 @@ public class MixerScrollLight extends SessionSendableLightState {
         mSendBankSize = sendBankSize;
         mSendScroll = sendScroll;
         mSendCount = sendCount;
+
+        mSBankSize = sbankSize;
+        mSBankScroll = sbankScroll;
+        mSBankCount = sbankCount;
 
         mLastRowMode = lastRowMode;
     }
@@ -73,6 +84,11 @@ public class MixerScrollLight extends SessionSendableLightState {
                 } else {
                     return ColorTag.NULL_COLOR;
                 }
+            case STOP:
+            case SOLO:
+            case MUTE:
+            case RECORD:
+                return (isInBounds(mSBankScroll, mSBankCount, mSBankSize) ? mTag : ColorTag.NULL_COLOR);
             default:
                 return ColorTag.NULL_COLOR;
         }
