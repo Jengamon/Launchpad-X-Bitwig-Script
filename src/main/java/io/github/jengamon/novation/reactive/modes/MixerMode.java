@@ -335,18 +335,28 @@ public class MixerMode extends AbstractMode {
         int[] aoffsets = {-1, 1, -1, 1};
         SettableIntegerValue trackScrollPos = mBank.scrollPosition();
         SettableIntegerValue sendScrollPos = mTrack.sendBank().scrollPosition();
+        SettableIntegerValue sceneScrollPos = mBank.sceneBank().scrollPosition();
         IntegerSyncWrapper trackScroll = new IntegerSyncWrapper(trackScrollPos, surf, host);
         IntegerSyncWrapper sendScroll = new IntegerSyncWrapper(sendScrollPos, surf, host);
+        IntegerSyncWrapper sceneScroll = new IntegerSyncWrapper(sceneScrollPos, surf, host);
         IntegerSyncWrapper trackCount = new IntegerSyncWrapper(mBank.channelCount(), surf, host);
         IntegerSyncWrapper sendCount = new IntegerSyncWrapper(mTrack.sendBank().itemCount(), surf, host);
+        IntegerSyncWrapper sceneCount = new IntegerSyncWrapper(mBank.sceneBank().itemCount(), surf, host);
         int trackBankSize = mBank.getCapacityOfBank();
         int sendBankSize = mTrack.sendBank().getCapacityOfBank();
+        int sceneBankSize = mBank.sceneBank().getCapacityOfBank();
+        int[] svBankSize = new int[] {sceneBankSize, sceneBankSize, trackBankSize, trackBankSize};
+        SettableIntegerValue[] svPos = new SettableIntegerValue[]{sceneScrollPos, sceneScrollPos, trackScrollPos, trackScrollPos};
+        IntegerSyncWrapper[] svScroll = new IntegerSyncWrapper[]{sceneScroll, sceneScroll, trackScroll, trackScroll};
+        IntegerSyncWrapper[] svCount = new IntegerSyncWrapper[]{sceneCount, sceneCount, trackCount, trackCount};
         for(int j = 91; j < 95; j++) {
             int i = j - 91;
             arrowLights[i] = new MixerScrollLight(j, aoffsets[i], new ColorTag(0xff, 0xa1, 0x61),
-                    trackBankSize, trackScroll, trackCount, sendBankSize, sendScroll, sendCount, lastRowMode);
+                    trackBankSize, trackScroll, trackCount, sendBankSize, sendScroll, sendCount,
+                    svBankSize[i], svScroll[i], svCount[i], lastRowMode);
             MixerScrollAction action = new MixerScrollAction(aoffsets[i], trackBankSize, trackScrollPos, trackScroll,
-                    trackCount, sendBankSize, sendScrollPos, sendScroll, sendCount, lastRowMode);
+                    trackCount, sendBankSize, sendScrollPos, sendScroll, sendCount,
+                    svBankSize[i], svPos[i], svScroll[i], svCount[i], lastRowMode);
             arrowActions[i] = host.createAction(action, action);
         }
     }

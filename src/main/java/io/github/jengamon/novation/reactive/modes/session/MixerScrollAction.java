@@ -21,8 +21,15 @@ public class MixerScrollAction implements Runnable, Supplier<String> {
     private IntegerSyncWrapper mSendScroll;
     private IntegerSyncWrapper mSendCount;
 
+    private int mSBankSize;
+    private SettableIntegerValue mSBankScrollPos;
+    private IntegerSyncWrapper mSBankScroll;
+    private IntegerSyncWrapper mSBankCount;
+
     public MixerScrollAction(int offset, int bankSize, SettableIntegerValue bankScrollPos, IntegerSyncWrapper bankScroll, IntegerSyncWrapper bankCount,
-                               int sendBankSize, SettableIntegerValue sendScrollPos, IntegerSyncWrapper sendScroll, IntegerSyncWrapper sendCount, AtomicReference<SessionPadMode> lastRowMode) {
+                               int sendBankSize, SettableIntegerValue sendScrollPos, IntegerSyncWrapper sendScroll, IntegerSyncWrapper sendCount,
+                             int sbankSize, SettableIntegerValue sbankScrollPos, IntegerSyncWrapper sbankScroll, IntegerSyncWrapper sbankCount,
+                             AtomicReference<SessionPadMode> lastRowMode) {
         mOffset = offset;
         mBankSize = bankSize;
         mBankScrollPos = bankScrollPos;
@@ -32,6 +39,10 @@ public class MixerScrollAction implements Runnable, Supplier<String> {
         mSendScrollPos = sendScrollPos;
         mSendScroll = sendScroll;
         mSendCount = sendCount;
+        mSBankSize = sbankSize;
+        mSBankScrollPos = sbankScrollPos;
+        mSBankScroll = sbankScroll;
+        mSBankCount = sbankCount;
         mLastRowMode = lastRowMode;
     }
 
@@ -49,6 +60,12 @@ public class MixerScrollAction implements Runnable, Supplier<String> {
                 break;
             case SENDS:
                 if(isInBounds(mSendScroll, mSendCount, mSendBankSize)) mSendScrollPos.inc(mOffset);
+                break;
+            case STOP:
+            case MUTE:
+            case SOLO:
+            case RECORD:
+                if(isInBounds(mSBankScroll, mSBankCount, mSBankSize)) mSBankScrollPos.inc(mOffset);
                 break;
             default:
                 break;
