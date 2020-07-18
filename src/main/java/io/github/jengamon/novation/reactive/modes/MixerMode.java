@@ -13,10 +13,7 @@ import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.ColorSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.IntegerSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.RangedValueSyncWrapper;
-import io.github.jengamon.novation.reactive.modes.session.MixerSessionPadLight;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadAction;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadLight;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadMode;
+import io.github.jengamon.novation.reactive.modes.session.*;
 import io.github.jengamon.novation.surface.Fader;
 import io.github.jengamon.novation.surface.LaunchpadXPad;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
@@ -34,6 +31,8 @@ public class MixerMode extends AbstractMode {
     private MixerSessionPadLight[][] mixerLights = new MixerSessionPadLight[8][8];
     private HardwareActionBindable[] scenePads = new HardwareActionBindable[8];
     private MixerSceneLight[] sceneLights = new MixerSceneLight[8];
+    private MixerScrollLight[] arrowLights = new MixerScrollLight[4];
+    private HardwareBindable[] arrowActions = new HardwareBindable[4];
 
     private MixerFaderLight[] faderLights = new MixerFaderLight[8];
     private SettableRangedValue[] volumeActions = new SettableRangedValue[8];
@@ -332,6 +331,24 @@ public class MixerMode extends AbstractMode {
             ColorSyncWrapper trackColor = new ColorSyncWrapper(mBank.getItemAt(i).color(), surf, host);
             faderLights[i] = new MixerFaderLight(i, lastRowMode, trackExists, sendExists, controlExists, trackColor);
         }
+
+        int[] aoffsets = {-1, 1, -1, 1};
+        SettableIntegerValue trackScrollPos = mBank.scrollPosition();
+        SettableIntegerValue sendScrollPos = mTrack.sendBank().scrollPosition();
+        IntegerSyncWrapper trackScroll = new IntegerSyncWrapper(trackScrollPos, surf, host);
+        IntegerSyncWrapper sendScroll = new IntegerSyncWrapper(sendScrollPos, surf, host);
+        IntegerSyncWrapper trackCount = new IntegerSyncWrapper(mBank.channelCount(), surf, host);
+        IntegerSyncWrapper sendCount = new IntegerSyncWrapper(mTrack.sendBank().itemCount(), surf, host);
+        int trackBankSize = mBank.getCapacityOfBank();
+        int sendBankSize = mTrack.sendBank().getCapacityOfBank();
+        for(int j = 91; j < 95; j++) {
+            int i = j - 91;
+            arrowLights[i] = new MixerScrollLight(j, aoffsets[i], new ColorTag(0xff, 0xa1, 0x61),
+                    trackBankSize, trackScroll, trackCount, sendBankSize, sendScroll, sendCount, lastRowMode);
+            MixerScrollAction action = new MixerScrollAction(aoffsets[i], trackBankSize, trackScrollPos, trackScroll,
+                    trackCount, sendBankSize, sendScrollPos, sendScroll, sendCount, lastRowMode);
+            arrowActions[i] = host.createAction(action, action);
+        }
     }
 
     @Override
@@ -366,6 +383,11 @@ public class MixerMode extends AbstractMode {
             sendFader.light().state().setValue(faderLights[i]);
             bindings.add(controlFader.fader().addBindingWithRange(controlActions[i], 0, 1));
             controlFader.light().state().setValue(faderLights[i]);
+        }
+        LaunchpadXPad[] arrows = new LaunchpadXPad[]{surface.up(), surface.down(), surface.left(), surface.right()};
+        for(int i = 0; i < 4; i++) {
+            bindings.add(arrows[i].button().pressedAction().addBinding(arrowActions[i]));
+            arrows[i].light().state().setValue(arrowLights[i]);
         }
         return bindings;
     }
