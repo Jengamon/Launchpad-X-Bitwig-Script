@@ -1,23 +1,21 @@
 package io.github.jengamon.novation.reactive.modes;
 
 import com.bitwig.extension.api.Color;
-import com.bitwig.extension.callback.ObjectValueChangedCallback;
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.ColorTag;
 import io.github.jengamon.novation.Utils;
-import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.SessionSendable;
 import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.ColorSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.IntegerSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.NotesSyncWrapper;
+import io.github.jengamon.novation.surface.LaunchpadXPad;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 import io.github.jengamon.novation.surface.NoteButton;
 import io.github.jengamon.novation.surface.ihls.BasicColor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -162,14 +160,15 @@ public class DrumPadMode extends AbstractMode {
 
     private static class ArrowLight extends InternalHardwareLightState implements SessionSendable {
         private IntegerSyncWrapper mScrollPosition;
+        private ColorSyncWrapper mColor;
         private int mOffset;
         private int mID;
-        private static final ColorTag ARROW_COLOR = new ColorTag(0x73, 0x98, 0x14);
 
-        private ArrowLight(int id, int offset, IntegerSyncWrapper scroll) {
+        private ArrowLight(int id, int offset, IntegerSyncWrapper scroll, ColorSyncWrapper color) {
             mScrollPosition = scroll;
             mOffset = offset;
             mID = id;
+            mColor = color;
         }
 
         private boolean isInRange() {
@@ -177,10 +176,15 @@ public class DrumPadMode extends AbstractMode {
             return val >= 0 && val <= 66;
         }
 
+        private ColorTag getColor() {
+            ColorTag color = Utils.toTag(mColor.get());
+            return (color.equals(ColorTag.NULL_COLOR) ? new ColorTag(0xff, 0xff, 0xff) : color);
+        }
+
         @Override
         public HardwareLightVisualState getVisualState() {
             if(isInRange()) {
-                return HardwareLightVisualState.createForColor(ARROW_COLOR.toBitwigColor());
+                return HardwareLightVisualState.createForColor(getColor().toBitwigColor());
             } else {
                 return HardwareLightVisualState.createForColor(Color.nullColor());
             }
@@ -196,7 +200,7 @@ public class DrumPadMode extends AbstractMode {
         @Override
         public void send(Session session) {
             if(isInRange()) {
-                session.sendMidi(0xB0, mID, ARROW_COLOR.selectNovationColor());
+                session.sendMidi(0xB0, mID, getColor().selectNovationColor());
             } else {
                 session.sendMidi(0xB0, mID, 0);
             }
@@ -238,14 +242,10 @@ public class DrumPadMode extends AbstractMode {
 
     private AtomicInteger mChannel = new AtomicInteger(0);
 
-    private HardwareActionBindable mUpAction;
-    private ArrowLight mUpLight;
-    private HardwareActionBindable mDownAction;
-    private ArrowLight mDownLight;
-    private HardwareActionBindable mLeftAction;
-    private ArrowLight mLeftLight;
-    private HardwareActionBindable mRightAction;
-    private ArrowLight mRightLight;
+    private HardwareActionBindable[] mArrowActions = new HardwareActionBindable[4];
+    private int[] mArrowOffsets = new int[] { 16, -16, 4, -4 };
+    private IntegerSyncWrapper mScroll;
+    private ColorSyncWrapper mTrackColor;
 
     public DrumPadMode(ControllerHost host, Session session, HardwareSurface surf, CursorDevice device) {
         BooleanValue mHasDrumPads = device.hasDrumPads();
@@ -260,23 +260,18 @@ public class DrumPadMode extends AbstractMode {
         });
         DrumPadBank mDrumBank = device.createDrumPadBank(64);
         SettableIntegerValue mScrollPosition = mDrumBank.scrollPosition();
-        IntegerSyncWrapper mScroll = new IntegerSyncWrapper(mScrollPosition, surf, host);
+        mScroll = new IntegerSyncWrapper(mScrollPosition, surf, host);
+        mTrackColor = new ColorSyncWrapper(device.channel().color(), surf, host);
         mDrumPadLights = new DrumPadLight[64];
         mPlayNote = new HardwareActionBindable[64];
         mReleaseNote = new HardwareActionBindable[64];
         mAftertouchNote = new AbsoluteHardwarControlBindable[64];
-        ShiftAction upAct = new ShiftAction(mScrollPosition, 16, mScroll);
-        mUpAction = host.createAction(upAct, upAct);
-        mUpLight = new ArrowLight(91, 16, mScroll);
-        ShiftAction downAct = new ShiftAction(mScrollPosition, -16, mScroll);
-        mDownAction = host.createAction(downAct, downAct);
-        mDownLight = new ArrowLight(92, -16, mScroll);
-        ShiftAction leftAct = new ShiftAction(mScrollPosition, -4, mScroll);
-        mLeftAction = host.createAction(leftAct, leftAct);
-        mLeftLight = new ArrowLight(93, -4, mScroll);
-        ShiftAction rightAct = new ShiftAction(mScrollPosition, 4, mScroll);
-        mRightAction = host.createAction(rightAct, rightAct);
-        mRightLight = new ArrowLight(94, 4, mScroll);
+
+        for(int i = 0; i < 4; i++) {
+            ShiftAction act = new ShiftAction(mScrollPosition, mArrowOffsets[i], mScroll);
+            mArrowActions[i] = host.createAction(act, act);
+        }
+
         for(int i = 0; i < 64; i++) {
             ColorSyncWrapper mPadColors = new ColorSyncWrapper(mDrumBank.getItemAt(i).color(), surf, host);
             NotesSyncWrapper mNotes = new NotesSyncWrapper(mDrumBank.getItemAt(i).playingNotes(), surf, host);
@@ -308,14 +303,14 @@ public class DrumPadMode extends AbstractMode {
                 noteButton.light().state().setValue(mDrumPadLights[aid]);
             }
         }
-        bindings.add(surface.up().button().pressedAction().addBinding(mUpAction));
-        bindings.add(surface.down().button().pressedAction().addBinding(mDownAction));
-        bindings.add(surface.left().button().pressedAction().addBinding(mLeftAction));
-        bindings.add(surface.right().button().pressedAction().addBinding(mRightAction));
-        surface.up().light().state().setValue(mUpLight);
-        surface.down().light().state().setValue(mDownLight);
-        surface.left().light().state().setValue(mLeftLight);
-        surface.right().light().state().setValue(mRightLight);
+
+        LaunchpadXPad[] arrows = new LaunchpadXPad[] {surface.up(), surface.down(), surface.left(), surface.right()};
+        for(int i = 0; i < arrows.length; i++) {
+            LaunchpadXPad pad = arrows[i];
+            bindings.add(pad.button().pressedAction().addBinding(mArrowActions[i]));
+            pad.light().state().setValue(new ArrowLight(pad.id(), mArrowOffsets[i], mScroll, mTrackColor));
+        }
+
         return bindings;
     }
 
