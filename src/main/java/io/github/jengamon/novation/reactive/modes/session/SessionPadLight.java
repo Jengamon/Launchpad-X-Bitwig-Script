@@ -33,9 +33,6 @@ public class SessionPadLight extends SessionSendableLightState {
         mBPM = bpm;
     }
 
-    //public int track() { return mTrack; }
-    //public int scene() { return mScene; }
-
     public ColorTag getSolidColor() {
         ColorTag baseColor = Utils.toTag(mBaseColor.get());
         if(baseColor.selectNovationColor() == 0 && mArmed.get() && mSceneExists.get()) {
