@@ -11,163 +11,72 @@ import io.github.jengamon.novation.reactive.atomics.ColorSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.IntegerSyncWrapper;
 import io.github.jengamon.novation.reactive.atomics.RangedValueSyncWrapper;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import static io.github.jengamon.novation.reactive.modes.session.SessionPadMode.SESSION;
-
 public class SessionPadLight extends SessionSendableLightState {
-    private AtomicReference<SessionPadMode> mPadMode;
     private ColorSyncWrapper mBaseColor;
     private BooleanSyncWrapper mArmed;
     private BooleanSyncWrapper mSceneExists;
     private IntegerSyncWrapper mPlaybackState;
     private BooleanSyncWrapper mIsQueued;
     private RangedValueSyncWrapper mBPM;
-    private BooleanSyncWrapper mIsTrackEnabled;
-    private BooleanSyncWrapper mIsMuted;
-    private BooleanSyncWrapper mIsSoloed;
-    private BooleanSyncWrapper mIsStopped;
-    private BooleanSyncWrapper mTrackExists;
-    private BooleanSyncWrapper mHasNoteInput;
-    private BooleanSyncWrapper mHasAudioInput;
     private int mTrack;
     private int mScene;
 
-    public SessionPadLight(int x, int y, RangedValueSyncWrapper bpm, AtomicReference<SessionPadMode> padMode, ColorSyncWrapper baseColor, BooleanSyncWrapper armed,
-                           BooleanSyncWrapper sceneExists, IntegerSyncWrapper playbackState, BooleanSyncWrapper isQueued, BooleanSyncWrapper isTrackEnabled,
-                           BooleanSyncWrapper isMuted, BooleanSyncWrapper isSoloed, BooleanSyncWrapper isStopped, BooleanSyncWrapper trackExists,
-                           BooleanSyncWrapper hasNoteInput, BooleanSyncWrapper hasAudioInput) {
+    public SessionPadLight(int x, int y, RangedValueSyncWrapper bpm, ColorSyncWrapper baseColor, BooleanSyncWrapper armed,
+                           BooleanSyncWrapper sceneExists, IntegerSyncWrapper playbackState, BooleanSyncWrapper isQueued) {
         mTrack = x;
         mScene = y;
         mBaseColor = baseColor;
-        mPadMode = padMode;
         mArmed = armed;
         mSceneExists = sceneExists;
         mPlaybackState = playbackState;
-        mIsTrackEnabled = isTrackEnabled;
         mIsQueued = isQueued;
-        mIsMuted = isMuted;
-        mIsSoloed = isSoloed;
-        mIsStopped = isStopped;
-        mTrackExists = trackExists;
-        mHasAudioInput = hasAudioInput;
-        mHasNoteInput = hasNoteInput;
         mBPM = bpm;
     }
 
-    public int track() { return mTrack; }
-    public int scene() { return mScene; }
+    //public int track() { return mTrack; }
+    //public int scene() { return mScene; }
 
-    ColorTag getSolidColor() {
+    public ColorTag getSolidColor() {
         ColorTag baseColor = Utils.toTag(mBaseColor.get());
-        switch (mPadMode.get()) {
-            case SESSION:
-            case VOLUME:
-            case PAN:
-            case SENDS:
-            case CONTROLS:
-                if(baseColor.selectNovationColor() == 0 && mArmed.get() && mSceneExists.get() && mIsTrackEnabled.get()) {
-                    return new ColorTag(0xaa, 0x61, 0x61);
-                } else {
-                    return (mIsTrackEnabled.get() ? baseColor : new ColorTag(0, 0, 0));
-                }
-            case STOP:
-                if(mIsTrackEnabled.get() && mTrackExists.get()) {
-                    if(mIsStopped.get()) {
-                        return new ColorTag(0xaa, 0x61, 0x61);
-                    } else {
-                        return new ColorTag(0xff, 0x61, 0x61);
-                    }
-                } else {
-                    return ColorTag.NULL_COLOR;
-                }
-            case RECORD:
-                if(mIsTrackEnabled.get() && mTrackExists.get()) {
-                    if(mArmed.get()) {
-                        return new ColorTag(0xff, 0x61, 0x61);
-                    } else if(mHasNoteInput.get() || mHasAudioInput.get()) {
-                        return new ColorTag(0xaa, 0x61, 0x61);
-                    } else {
-                        return ColorTag.NULL_COLOR;
-                    }
-                } else {
-                    return ColorTag.NULL_COLOR;
-                }
-            case SOLO:
-                if(mIsTrackEnabled.get() && mTrackExists.get()) {
-                    if(mIsSoloed.get()) {
-                        return new ColorTag(0xf3, 0xee, 0x61);
-                    } else {
-                        return new ColorTag(0xb3, 0xa1, 0x61);
-                    }
-                } else {
-                    return ColorTag.NULL_COLOR;
-                }
-            case MUTE:
-                if(mIsTrackEnabled.get() && mTrackExists.get()) {
-                    if(mIsMuted.get()) {
-                        return new ColorTag(0xff, 0xa1, 0x61);
-                    } else {
-                        return new ColorTag(0xa1, 0x76, 0x61);
-                    }
-                } else {
-                    return ColorTag.NULL_COLOR;
-                }
-            default:
-                return new ColorTag(0, 0, 0);
+        if(baseColor.selectNovationColor() == 0 && mArmed.get() && mSceneExists.get()) {
+            return new ColorTag(0xaa, 0x61, 0x61);
+        } else {
+            return baseColor;
         }
     }
 
-    ColorTag getBlinkColor() {
-        switch(mPadMode.get()) {
-            case SESSION:
-            case VOLUME:
-            case PAN:
-            case SENDS:
-            case CONTROLS:
-                switch(mPlaybackState.get()) {
-                    case 0: // Stopped
-                        if(mIsQueued.get() && mIsTrackEnabled.get()) {
-                            return new ColorTag(255, 97, 97);
-                        } else {
-                            return null;
-                        }
-                    case 1: // Playing
-                        if(mIsQueued.get() && mIsTrackEnabled.get()) {
-                            return new ColorTag(97, 255, 97);
-                        } else {
-                            return null;
-                        }
-                    case 2: // Recording
-                        if(mIsQueued.get() && mIsTrackEnabled.get()) {
-                            return new ColorTag(0xdd, 0x61, 0x61);
-                        } else {
-                            return null;
-                        }
-                    default:
-                        return null;
+    public ColorTag getBlinkColor() {
+        switch(mPlaybackState.get()) {
+            case 0: // Stopped
+                if(mIsQueued.get()) {
+                    return new ColorTag(255, 97, 97);
+                } else {
+                    return null;
+                }
+            case 1: // Playing
+                if(mIsQueued.get()) {
+                    return new ColorTag(97, 255, 97);
+                } else {
+                    return null;
+                }
+            case 2: // Recording
+                if(mIsQueued.get()) {
+                    return new ColorTag(0xdd, 0x61, 0x61);
+                } else {
+                    return null;
                 }
             default:
                 return null;
         }
     }
 
-    ColorTag getPulseColor() {
-        switch(mPadMode.get()) {
-            case SESSION:
-            case VOLUME:
-            case PAN:
-            case SENDS:
-            case CONTROLS:
-                switch(mPlaybackState.get()) {
-                    case 2: // Recording
-                        if(!mIsQueued.get() && mIsTrackEnabled.get()) return new ColorTag(0xdd, 0x61, 0x61);
-                    case 1: // Playing
-                        if(!mIsQueued.get() && mIsTrackEnabled.get()) return Utils.toTag(mBaseColor.get());
-                    case 0: // Stopped
-                    default:
-                        return null;
-                }
+    public ColorTag getPulseColor() {
+        switch(mPlaybackState.get()) {
+            case 2: // Recording
+                if(!mIsQueued.get()) return new ColorTag(0xdd, 0x61, 0x61);
+            case 1: // Playing
+                if(!mIsQueued.get()) return Utils.toTag(mBaseColor.get());
+            case 0: // Stopped
             default:
                 return null;
         }

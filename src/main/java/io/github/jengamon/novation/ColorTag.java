@@ -3,7 +3,8 @@ package io.github.jengamon.novation;
 import com.bitwig.extension.api.Color;
 import io.github.jengamon.novation.internal.Session;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ColorTag {
     private int mRed;
@@ -64,6 +65,10 @@ public class ColorTag {
         INDEX_COLORS.put("aa6161", 0x79);
         INDEX_COLORS.put("f3ee61", 0x7c);
         INDEX_COLORS.put("b3a161", 0x7d);
+        INDEX_COLORS.put("83dd59", 0x4c);
+        INDEX_COLORS.put("f3b39f", 0x6b);
+        INDEX_COLORS.put("fab3ff", 0x34);
+        INDEX_COLORS.put("e0605f", 0x78);
     }
 
     public ColorTag(int red, int green, int blue) {

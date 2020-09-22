@@ -1,23 +1,23 @@
 package io.github.jengamon.novation;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
-import com.bitwig.extension.controller.api.*;
 import com.bitwig.extension.controller.ControllerExtension;
+import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.HostErrorOutputStream;
 import io.github.jengamon.novation.internal.HostOutputStream;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.SessionSendableLightState;
 import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
+import io.github.jengamon.novation.reactive.modes.AbstractMode;
 import io.github.jengamon.novation.reactive.modes.DrumPadMode;
-import io.github.jengamon.novation.reactive.modes.MixerMode;
 import io.github.jengamon.novation.reactive.modes.SessionMode;
+import io.github.jengamon.novation.reactive.modes.mixer.*;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
+import io.github.jengamon.novation.surface.ihls.BasicColor;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,7 +41,6 @@ public class LaunchpadXExtension extends ControllerExtension
 
       Preferences prefs = host.getPreferences();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
-      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
@@ -57,36 +56,8 @@ public class LaunchpadXExtension extends ControllerExtension
       Transport mTransport = host.createTransport();
       CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
       CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
-      TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
-//      TrackBank mMixerTrackBank = host.createTrackBank(8, 8, 0, false);
-
-      // Setup track bank following
-      SettableIntegerValue stbpos = mSessionTrackBank.scrollPosition();
-//      SettableIntegerValue mtbpos = mMixerTrackBank.scrollPosition();
-      IntegerValue stbcc = mSessionTrackBank.channelCount();
-//      IntegerValue mtbcc = mMixerTrackBank.channelCount();
-      stbpos.markInterested(); stbcc.markInterested();
-//      mtbpos.markInterested(); mtbcc.markInterested();
-      AtomicBoolean followCursor = new AtomicBoolean(false);
-      mFollowCursorTrack.addValueObserver(followCursor::set);
-      mCursorTrack.position().addValueObserver(new_pos -> {
-         if(followCursor.get()) {
-            // Check if it is in bounds
-            int stbposition = stbpos.get();
-//            int mtbposition = mtbpos.get();
-            boolean stbib = new_pos > stbposition && new_pos < (stbposition + 8);
-//            boolean mtbib = new_pos > mtbposition && new_pos < (mtbposition + 8);
-            System.out.println(stbcc.get() + " "  + mSessionTrackBank.getSizeOfBank());
-            if(!stbib) {
-               int nstbposition = Math.max(0, Math.min(stbcc.get() - mSessionTrackBank.getCapacityOfBank(), new_pos));
-               stbpos.set(nstbposition);
-            }
-//            if(!mtbib) {
-//               int nmtbposition = Math.max(0, Math.min(mtbcc.get() - mMixerTrackBank.getCapacityOfBank(), new_pos));
-//               mtbpos.set(nmtbposition);
-//            }
-         }
-      });
+      TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8);
+      mSessionTrackBank.setSkipDisabledItems(true);
 
       mViewableBanks.addValueObserver(vb -> {
          mSessionTrackBank.sceneBank().setIndication(vb);
@@ -100,12 +71,27 @@ public class LaunchpadXExtension extends ControllerExtension
       // Create surface buttons and their lights
       mSurface.setPhysicalSize(241, 241);
       mLSurface = new LaunchpadXSurface(host, mSession, mSurface);
-      mMachine = new ModeMachine();
+      mMachine = new ModeMachine(mSession);
       mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mSurface, host, pulseSessionPads));
       mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mSurface, mCursorDevice));
-      mMachine.register(Mode.MIXER, new MixerMode(host, mTransport, mLSurface, mSession, mSurface, mCursorTrack, mCursorDevice, mSessionTrackBank));
+      mMachine.register(Mode.UNKNOWN, new AbstractMode() {
+         @Override
+         public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
+            return new ArrayList<>();
+         }
+      });
 
-      MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
+      // Mixer modes
+      AtomicReference<Mode> mixerMode = new AtomicReference<>(Mode.MIXER_VOLUME);
+      mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_PAN, new PanMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_SEND, new SendMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack));
+      mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack));
+      mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+//      MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
 
       // Select record button behavior and light it accordingly
       mCursorTrack.hasNext().markInterested();
@@ -168,24 +154,29 @@ public class LaunchpadXExtension extends ControllerExtension
          }
       };
       mLSurface.record().light().state().setValue(recordLightState);
+      int nid = mLSurface.novation().id();
+      mLSurface.novation().light().state().setValue(new BasicColor(new ColorTag(0xff, 0xff, 0xff), 0xB0, new int[]{0}, nid));
 
       AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
       HardwareActionBindable mSessionAction = host.createAction(() -> {
          switch(mMachine.mode()) {
             case SESSION:
-               lastSessionMode.set(Mode.MIXER);
-               mMachine.setMode(mLSurface, Mode.MIXER);
+               lastSessionMode.set(mixerMode.get());
+               mMachine.setMode(mLSurface, mixerMode.get());
                break;
-            case MIXER:
-               mSession.sendSysex("00 00");
+            case MIXER_VOLUME:
+            case MIXER_PAN:
+            case MIXER_SEND:
+            case MIXER_CONTROLS:
+            case MIXER_STOP:
+            case MIXER_MUTE:
+            case MIXER_SOLO:
+            case MIXER_ARM:
                lastSessionMode.set(Mode.SESSION);
                mMachine.setMode(mLSurface, Mode.SESSION);
                break;
             case DRUM:
             case UNKNOWN:
-                if(lastSessionMode.get() == Mode.SESSION) {
-                    mSession.sendSysex("00 00");
-                }
                mMachine.setMode(mLSurface, lastSessionMode.get());
                break;
             default:
@@ -195,10 +186,23 @@ public class LaunchpadXExtension extends ControllerExtension
       }, () -> "Press Session View");
 
       HardwareActionBindable mNoteAction = host.createAction(() -> {
+         Mode om = mMachine.mode();
+         if(om != Mode.DRUM && om != Mode.UNKNOWN) {
+            lastSessionMode.set(om);
+         }
          mSession.sendSysex("00 01");
          mMachine.setMode(mLSurface, Mode.DRUM);
          host.requestFlush();
       }, () -> "Press Note View");
+
+      HardwareActionBindable mCustomAction = host.createAction(() -> {
+         Mode om = mMachine.mode();
+         if(om != Mode.DRUM && om != Mode.UNKNOWN) {
+            lastSessionMode.set(om);
+         }
+         mMachine.setMode(mLSurface, Mode.UNKNOWN);
+         host.requestFlush();
+      }, () -> "Press Custom View");
 
       if(mSwapOnBoot.get()) {
          mSessionAction.invoke();
@@ -208,23 +212,18 @@ public class LaunchpadXExtension extends ControllerExtension
 
       mSessionAction.addBinding(mLSurface.session().button().pressedAction());
       mNoteAction.addBinding(mLSurface.note().button().pressedAction());
-
-//      mSession.sendSysex("00");
+      mCustomAction.addBinding(mLSurface.custom().button().pressedAction());
 
       mSession.setMidiCallback(ChannelType.DAW, this::onMidi0);
       mSession.setSysexCallback(ChannelType.DAW, this::onSysex0);
       mSession.setMidiCallback(ChannelType.CUSTOM, this::onMidi1);
 
-      // TODO: Perform your driver initialization here.
-      // For now just show a popup notification for verification that it is running.
       System.out.println("Launchpad X Initialized");
    }
 
    @Override
    public void exit()
    {
-      // TODO: Perform any cleanup once the driver exits
-      // For now just show a popup notification for verification that it is no longer running.
       mSession.shutdown();
       System.out.println("Launchpad X Exited");
    }
@@ -247,8 +246,7 @@ public class LaunchpadXExtension extends ControllerExtension
    private void onSysex0(final String data)
    {
       byte[] sysex = Utils.parseSysex(data);
-//      System.out.println(Arrays.toString(sysex));
-      mMachine.sendSysex(mSession, sysex);
+      mMachine.sendSysex(sysex);
       mSurface.invalidateHardwareOutputState();
    }
    

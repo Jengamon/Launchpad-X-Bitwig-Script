@@ -1,6 +1,5 @@
 package io.github.jengamon.novation;
 
-import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.HardwareBinding;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.modes.AbstractMode;
@@ -15,11 +14,13 @@ public class ModeMachine {
     private Map<Mode, AbstractMode> mModes;
     private Mode mMode;
     private List<HardwareBinding> mBindings;
+    private Session mSession;
 
-    public ModeMachine() {
+    public ModeMachine(Session session) {
         mModes = new HashMap<>();
         mBindings = new ArrayList<>();
         mMode = Mode.UNKNOWN;
+        mSession = session;
     }
 
     public Mode mode() { return mMode; }
@@ -35,13 +36,15 @@ public class ModeMachine {
         mMode = mode;
         if(!mModes.containsKey(mode)) throw new RuntimeException("Invalid mode state: " + mode);
         surface.clear();
-        mBindings = mModes.get(mode).onBind(surface);
+        AbstractMode modus = mModes.get(mode);
+        mBindings = modus.onBind(surface);
+        modus.finishedBind(mSession);
     }
 
-    public void sendSysex(Session session, byte[] message) {
+    public void sendSysex(byte[] message) {
         List<String> responses = mModes.get(mMode).processSysex(message);
         for(String response : responses) {
-            session.sendSysex(response);
+            mSession.sendSysex(response);
         }
     }
 }

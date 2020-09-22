@@ -4,20 +4,21 @@ import com.bitwig.extension.api.Color;
 import com.bitwig.extension.callback.BooleanValueChangedCallback;
 import com.bitwig.extension.callback.IntegerValueChangedCallback;
 import com.bitwig.extension.controller.api.*;
-import io.github.jengamon.novation.ColorTag;
 import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.SessionSendableLightState;
-import io.github.jengamon.novation.reactive.atomics.*;
-import io.github.jengamon.novation.reactive.modes.session.*;
+import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
+import io.github.jengamon.novation.reactive.atomics.ColorSyncWrapper;
+import io.github.jengamon.novation.reactive.atomics.IntegerSyncWrapper;
+import io.github.jengamon.novation.reactive.atomics.RangedValueSyncWrapper;
+import io.github.jengamon.novation.reactive.modes.session.SessionPadLight;
+import io.github.jengamon.novation.reactive.modes.session.SessionScrollLight;
 import io.github.jengamon.novation.surface.LaunchpadXPad;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 import io.github.jengamon.novation.surface.NoteButton;
-import io.github.jengamon.novation.surface.ihls.BasicColor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class SessionMode extends AbstractMode {
     private TrackBank mBank;
@@ -97,7 +98,6 @@ public class SessionMode extends AbstractMode {
         // Setup pad lights and buttons
         padLights = new SessionPadLight[8][8];
         padActions = new HardwareActionBindable[8][8];
-        AtomicReference<SessionPadMode> padMode = new AtomicReference<>(SessionPadMode.SESSION);
         for(int j = 0; j < 8; j++) {
             padLights[j] = new SessionPadLight[8];
             padActions[j] = new HardwareActionBindable[8];
@@ -108,13 +108,6 @@ public class SessionMode extends AbstractMode {
                 ColorSyncWrapper color = new ColorSyncWrapper(slot.color(), surf, host);
                 BooleanSyncWrapper armed = new BooleanSyncWrapper(mBank.getItemAt(i).arm(), surf, host);
                 BooleanSyncWrapper sceneExists = new BooleanSyncWrapper(mBank.sceneBank().getItemAt(j).exists(), surf, host);
-                BooleanSyncWrapper trackEnabled = new BooleanSyncWrapper(track.isActivated(), surf, host);
-                BooleanSyncWrapper isMuted = new BooleanSyncWrapper(track.mute(), surf, host);
-                BooleanSyncWrapper isSoloed = new BooleanSyncWrapper(track.solo(), surf, host);
-                BooleanSyncWrapper isStopped = new BooleanSyncWrapper(track.isStopped(), surf, host);
-                BooleanSyncWrapper trackExists = new BooleanSyncWrapper(track.exists(), surf, host);
-                BooleanSyncWrapper hasNoteInput = new BooleanSyncWrapper(track.sourceSelector().hasNoteInputSelected(), surf, host);
-                BooleanSyncWrapper hasAudioInput = new BooleanSyncWrapper(track.sourceSelector().hasAudioInputSelected(), surf, host);
                 int finalJ = j;
                 // Extract the playback state
                 Value<IntegerValueChangedCallback> playbackStateValue = new Value<IntegerValueChangedCallback>() {
@@ -166,39 +159,34 @@ public class SessionMode extends AbstractMode {
                 But we want
                 [scene][track] displayed, so we manually transpose the arrays
                  */
-                padLights[j][i] = new SessionPadLight(i, j, bpm, padMode, color, armed,
-                        sceneExists, playbackState, isQueued, trackEnabled,
-                        isMuted, isSoloed, isStopped, trackExists, hasNoteInput, hasAudioInput);
-                SessionPadAction action = new SessionPadAction(i, j, padMode, slot, track, trackEnabled);
-                padActions[j][i] = host.createAction(action, action);
+                padLights[j][i] = new SessionPadLight(i, j, bpm, color, armed, sceneExists, playbackState, isQueued);
+                padActions[j][i] = slot.launchAction();
             }
         }
         arrowLights = new SessionScrollLight[4];
         arrowActions = new HardwareBindable[4];
-        SettableIntegerValue trackScrollPos = mBank.scrollPosition();
-        SettableIntegerValue sceneScrollPos = mBank.sceneBank().scrollPosition();
-        IntegerSyncWrapper trackScroll = new IntegerSyncWrapper(trackScrollPos, surf, host);
-        IntegerSyncWrapper sceneScroll = new IntegerSyncWrapper(sceneScrollPos, surf, host);
-        IntegerSyncWrapper trackCount = new IntegerSyncWrapper(mBank.channelCount(), surf, host);
-        IntegerSyncWrapper sceneCount = new IntegerSyncWrapper(mBank.sceneBank().itemCount(), surf, host);
-        int[] offset = new int[]{-1, 1, -1, 1};
-        int[] bankSize = new int[]{mBank.sceneBank().getCapacityOfBank(), mBank.sceneBank().getCapacityOfBank(), mBank.getCapacityOfBank(), mBank.getCapacityOfBank()};
-        IntegerSyncWrapper[] scroll = new IntegerSyncWrapper[]{sceneScroll, sceneScroll, trackScroll, trackScroll};
-        IntegerSyncWrapper[] count = new IntegerSyncWrapper[]{sceneCount, sceneCount, trackCount, trackCount};
-        SettableIntegerValue[] pos = new SettableIntegerValue[]{sceneScrollPos, sceneScrollPos, trackScrollPos, trackScrollPos};
+        HardwareActionBindable[] scrollActions = new HardwareActionBindable[] {
+                mBank.sceneBank().scrollBackwardsAction(),
+                mBank.sceneBank().scrollForwardsAction(),
+                mBank.scrollBackwardsAction(),
+                mBank.scrollForwardsAction()
+        };
+        BooleanSyncWrapper[] canScroll = new BooleanSyncWrapper[] {
+                new BooleanSyncWrapper(mBank.sceneBank().canScrollBackwards(), surf, host),
+                new BooleanSyncWrapper(mBank.sceneBank().canScrollForwards(), surf, host),
+                new BooleanSyncWrapper(mBank.canScrollBackwards(), surf, host),
+                new BooleanSyncWrapper(mBank.canScrollForwards(), surf, host)
+        };
         for(int j = 91; j < 95; j++) {
             int i = j - 91;
-            arrowLights[i] = new SessionScrollLight(j, offset[i], bankSize[i], scroll[i], count[i], new ColorTag(0xff, 0xa1, 0x61));
-            SessionScrollAction action = new SessionScrollAction(offset[i], bankSize[i], pos[i], scroll[i], count[i]);
-            arrowActions[i] = host.createAction(action, action);
+            arrowLights[i] = new SessionScrollLight(j, canScroll[i]);
+            arrowActions[i] = scrollActions[i];
         }
     }
 
     @Override
     public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
         List<HardwareBinding> bindings = new ArrayList<>();
-        int nid = surface.novation().id();
-        surface.novation().light().state().setValue(new BasicColor(new ColorTag(0x3e, 0xbb, 0x62), 0xB0, new int[]{1, 0}, nid, nid));
         for(int i = 0; i < 8; i++) {
             bindings.add(surface.scenes()[i].button().pressedAction().addBinding(sceneLaunchActions[i]));
             surface.scenes()[i].light().state().setValue(sceneLights[i]);
@@ -217,5 +205,11 @@ public class SessionMode extends AbstractMode {
             arrows[i].light().state().setValue(arrowLights[i]);
         }
         return bindings;
+    }
+
+    @Override
+    public void finishedBind(Session session) {
+        session.sendSysex("14 00 00");
+        session.sendSysex("00 00");
     }
 }
