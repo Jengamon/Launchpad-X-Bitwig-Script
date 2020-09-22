@@ -5,16 +5,17 @@ import io.github.jengamon.novation.ColorTag;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
 import io.github.jengamon.novation.reactive.FaderSendable;
-import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Fader {
     private AbsoluteHardwareKnob mFader;
     private MultiStateHardwareLight mLight;
-    private int mCC;
+    private AtomicInteger mCC = new AtomicInteger(0);
 
-    public Fader(ControllerHost host, Session session, HardwareSurface surface, String name, int cc, double x, double y) {
-        mCC = cc;
+    private MidiIn mIn;
 
+    public Fader(ControllerHost host, Session session, HardwareSurface surface, String name, double x, double y) {
         mFader = surface.createAbsoluteHardwareKnob(name);
         mLight = surface.createMultiStateHardwareLight("L" + name);
 
@@ -23,29 +24,43 @@ public class Fader {
             FaderSendable sendable = (FaderSendable)state;
             if(sendable != null) {
                 ColorTag color = sendable.faderColor();
-                session.sendMidi(0xB5, cc, color.selectNovationColor());
+                session.sendMidi(0xB5, mCC.get(), color.selectNovationColor());
             }
         });
 
-        BooleanSyncWrapper isUpdating = new BooleanSyncWrapper(mFader.isUpdatingTargetValue(), surface, host);
+        BooleanValue isUpdating = mFader.isUpdatingTargetValue();
+        isUpdating.markInterested();
         mFader.targetValue().addValueObserver(tv -> {
-            if(!isUpdating.get()) {
-                session.sendMidi(0xB4, cc, (int)Math.round(tv * 127));
+            boolean didUpdate = mFader.isUpdatingTargetValue().get();
+            if(!didUpdate) {
+                session.sendMidi(0xB4, mCC.get(), (int) Math.round(tv * 127));
             }
         });
-
-        mFader.disableTakeOver();
 
         mFader.setBounds(x, y, 10, 10);
-
-        MidiIn in = session.midiIn(ChannelType.DAW);
-
-        AbsoluteHardwareValueMatcher faderChange = in.createAbsoluteCCValueMatcher(4, cc);
-
-        mFader.setAdjustValueMatcher(faderChange);
+        mIn = session.midiIn(ChannelType.DAW);
     }
 
-    public int id() { return mCC; }
+    public void resetColor() {
+        mLight.state().setValue(new FaderSendable() {
+            @Override
+            public ColorTag faderColor() {
+                return ColorTag.NULL_COLOR;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                return false;
+            }
+        });
+    }
+
+    public int id() { return mCC.get(); }
+    public void setId(int cc) {
+        mCC.set(cc);
+        AbsoluteHardwareValueMatcher faderChange = mIn.createAbsoluteValueMatcher("status == 0xB4 && data1 == " + cc, "data2", 7);
+        mFader.setAdjustValueMatcher(faderChange);
+    }
     public AbsoluteHardwareKnob fader() { return mFader; }
     public MultiStateHardwareLight light() { return mLight; }
 }

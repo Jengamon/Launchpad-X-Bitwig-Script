@@ -4,7 +4,6 @@ import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.HardwareSurface;
 import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.Session;
-import io.github.jengamon.novation.reactive.modes.session.SessionPadMode;
 
 public class LaunchpadXSurface {
     private CCButton mUpArrow;
@@ -13,6 +12,7 @@ public class LaunchpadXSurface {
     private CCButton mRightArrow;
     private CCButton mSessionButton;
     private CCButton mNoteButton;
+    private CCButton mCustomButton;
     // Ignore the "Custom" Button
     private CCButton mRecordButton;
     private CCButton mNovationButton;
@@ -23,15 +23,10 @@ public class LaunchpadXSurface {
 
     private NoteButton[][] mNoteButtons;
 
-    private Fader[] mVolumeFaders;
-    private Fader[] mPanFaders;
-    private Fader[] mSendFaders;
-    private Fader[] mControlFaders;
+    private Fader[] mFaders;
 
-    private int[] mVolumeFaderCCs = new int[]{21, 22, 23, 24, 25, 26, 27, 28};
-    private int[] mPanFaderCCs = new int[]{29, 30, 31, 32, 33, 34, 35, 36};
-    private int[] mSendFaderCCs = new int[]{37, 38, 39, 40, 41, 42, 43, 44};
-    private int[] mControlFaderCCs = new int[]{45, 46, 47, 48, 49, 50, 51, 52};
+    //private int[] mVolumeFaderCCs = new int[]{21, 22, 23, 24, 25, 26, 27, 28};
+    //private int[] mFaderCCs = new int[]{45, 46, 47, 48, 49, 50, 51, 52};
 
     public LaunchpadXPad up() { return mUpArrow; }
     public LaunchpadXPad down() { return mDownArrow; }
@@ -40,6 +35,7 @@ public class LaunchpadXSurface {
 
     public LaunchpadXPad session() { return mSessionButton; }
     public LaunchpadXPad note() { return mNoteButton; }
+    public LaunchpadXPad custom() { return mCustomButton; }
 
     public LaunchpadXPad record() { return mRecordButton; }
     public LaunchpadXPad novation() { return mNovationButton; }
@@ -47,10 +43,7 @@ public class LaunchpadXSurface {
     public LaunchpadXPad[] scenes() { return mSceneButtons; }
     public NoteButton[][] notes() { return mNoteButtons; }
 
-    public Fader[] volumeFaders() { return mVolumeFaders; }
-    public Fader[] panFaders() {  return mPanFaders; }
-    public Fader[] sendFaders() { return mSendFaders; }
-    public Fader[] controlFaders() { return mControlFaders; }
+    public Fader[] faders() { return mFaders; }
 
     public LaunchpadXSurface(ControllerHost host, Session session, HardwareSurface surface) {
         mUpArrow = new CCButton(session, surface, "Up", 91, 13, 13);
@@ -58,7 +51,8 @@ public class LaunchpadXSurface {
         mLeftArrow = new CCButton(session, surface, "Left", 93, 13 + 23*2, 13);
         mRightArrow = new CCButton(session, surface, "Right", 94, 13 + 23*3, 13);
         mSessionButton = new CCButton(session, surface, "Session", 95, 13 + 23*4, 13);
-        mNoteButton = new CCButton(session, surface, "Note Mode", 96, 13 + 23*5, 13);
+        mNoteButton = new CCButton(session, surface, "Note", 96, 13 + 23*5, 13);
+        mCustomButton = new CCButton(session, surface, "Custom", 97, 13+23*6, 13);
         mRecordButton = new CCButton(session, surface, "Record", 98, 13 + 23*7, 13);
         mNovationButton = new CCButton(session, surface, "N", 99, 13 + 23 * 8, 13);
         mSceneButtons = new CCButton[8];
@@ -87,46 +81,14 @@ public class LaunchpadXSurface {
             }
         }
 
-        mVolumeFaders = new Fader[8];
+        mFaders = new Fader[8];
         for(int i = 0; i < 8; i++) {
-            mVolumeFaders[i] = new Fader(host, session, surface, "FV" + i, mVolumeFaderCCs[i], 0, i * 20);
-        }
-
-        mPanFaders = new Fader[8];
-        for(int i = 0; i < 8; i++) {
-            mPanFaders[i] = new Fader(host, session, surface, "FP" + i, mPanFaderCCs[i], 241 - 10, i * 20);
-        }
-
-        mSendFaders = new Fader[8];
-        for(int i = 0; i < 8; i++) {
-            mSendFaders[i] = new Fader(host, session, surface, "FS" + i, mSendFaderCCs[i], 241 - 20, i * 20);
-        }
-
-        mControlFaders = new Fader[8];
-        for(int i = 0; i < 8; i++) {
-            mControlFaders[i] = new Fader(host, session, surface, "FC" + i, mControlFaderCCs[i], 241 - 20, i * 20);
+            mFaders[i] = new Fader(host, session, surface, "FV" + i,0, i * 20);
         }
     }
 
-    public void enableFaders(SessionPadMode mode, boolean vertical, boolean bipolar) {
+    public void setupFaders(boolean vertical, boolean bipolar, int baseCC) {
         StringBuilder sysexString = new StringBuilder();
-        int[] mFaderCCs;
-        switch(mode) {
-            case VOLUME:
-                mFaderCCs = mVolumeFaderCCs;
-                break;
-            case PAN:
-                mFaderCCs = mPanFaderCCs;
-                break;
-            case SENDS:
-                mFaderCCs = mSendFaderCCs;
-                break;
-            case CONTROLS:
-                mFaderCCs = mControlFaderCCs;
-                break;
-            default:
-                return;
-        }
         sysexString.append("01 00");
         if(vertical) {
             sysexString.append("00 ");
@@ -135,46 +97,33 @@ public class LaunchpadXSurface {
         }
 //        assert colors.length == 8;
         for(int i = 0; i < 8; i++) {
+            int cc = baseCC + i;
             sysexString.append(Utils.toHexString((byte)i));
             if(bipolar) {
                 sysexString.append("01");
             } else {
                 sysexString.append("00");
             }
-            sysexString.append(Utils.toHexString((byte)mFaderCCs[i]));
+            sysexString.append(Utils.toHexString((byte)cc));
 //            sysexString.append(Utils.toHexString((byte)colors[i]));
             sysexString.append("00 ");
         }
         mSurface.invalidateHardwareOutputState();
         mSession.sendSysex(sysexString.toString());
-        refreshFaders();
-        mSession.sendSysex("00 0D");
-    }
 
-    public void refreshFaders() {
         for(int i = 0; i < 8; i++) {
-            Fader volFader = mVolumeFaders[i];
-            Fader panFader = mPanFaders[i];
-            Fader sendFader = mSendFaders[i];
-            Fader controlFader = mControlFaders[i];
-            mSession.sendMidi(0xB4, volFader.id(), (int)Math.round(volFader.fader().targetValue().get() * 127));
-            mSession.sendMidi(0xB4, panFader.id(), (int)Math.round(panFader.fader().targetValue().get() * 127));
-            mSession.sendMidi(0xB4, sendFader.id(), (int)Math.round(sendFader.fader().targetValue().get() * 127));
-            mSession.sendMidi(0xB4, controlFader.id(), (int)Math.round(controlFader.fader().targetValue().get() * 127));
+            mFaders[i].setId(baseCC + i);
         }
     }
 
-    public void disableFaders() {
-        mSession.sendSysex("00 00");
-        mSurface.invalidateHardwareOutputState();
-    }
-
+    /**
+     * Clears all color states for the surface.
+     */
     public void clear() {
         mUpArrow.resetColor();
         mDownArrow.resetColor();
         mLeftArrow.resetColor();
         mRightArrow.resetColor();
-        mNovationButton.resetColor();
 
         for(LaunchpadXPad scenePad : mSceneButtons) {
             scenePad.resetColor();
@@ -184,6 +133,10 @@ public class LaunchpadXSurface {
             for(LaunchpadXPad note : noteRow) {
                 note.resetColor();
             }
+        }
+
+        for(Fader fader : mFaders) {
+            fader.resetColor();
         }
     }
 }

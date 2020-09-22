@@ -1,10 +1,11 @@
 package io.github.jengamon.novation;
-import java.util.UUID;
 
 import com.bitwig.extension.api.PlatformType;
 import com.bitwig.extension.controller.AutoDetectionMidiPortNamesList;
 import com.bitwig.extension.controller.ControllerExtensionDefinition;
 import com.bitwig.extension.controller.api.ControllerHost;
+
+import java.util.UUID;
 
 public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
 {
@@ -29,7 +30,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getVersion()
    {
-      return "1.0";
+      return "1.1";
    }
 
    @Override
@@ -53,7 +54,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public int getRequiredAPIVersion()
    {
-      return 10;
+      return 11;
    }
 
    @Override
