@@ -58,6 +58,9 @@ public class LaunchpadXExtension extends ControllerExtension
       CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
       TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8);
       mSessionTrackBank.setSkipDisabledItems(true);
+      for(int i = 0; i < mSessionTrackBank.getCapacityOfBank(); i++) {
+         mSessionTrackBank.getItemAt(i).clipLauncherSlotBank().setSkipDisabledItems(true);
+      }
 
       mViewableBanks.addValueObserver(vb -> {
          mSessionTrackBank.sceneBank().setIndication(vb);
