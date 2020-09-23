@@ -1,7 +1,6 @@
 package io.github.jengamon.novation;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
-import com.bitwig.extension.callback.IntegerValueChangedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.internal.ChannelType;
@@ -41,7 +40,7 @@ public class LaunchpadXExtension extends ControllerExtension
       Preferences prefs = host.getPreferences();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
-      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
+//      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
       EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
@@ -65,29 +64,6 @@ public class LaunchpadXExtension extends ControllerExtension
             mSessionTrackBank.getItemAt(i).clipLauncherSlotBank().setIndication(vb);
          }
       });
-
-      SettableIntegerValue scrollPosition = mSessionTrackBank.scrollPosition();
-      IntegerValue minTrackPosition = mSessionTrackBank.getItemAt(0).position();
-      IntegerValue maxTrackPosition = mSessionTrackBank.getItemAt(7).position();
-      IntegerValue cursorPosition = mCursorTrack.position();
-      IntegerValue trackCount = mSessionTrackBank.itemCount();
-      trackCount.markInterested();
-      IntegerValueChangedCallback cursorUpdate = pos -> {
-         if(mFollowCursorTrack.get() && pos != -1) {
-            System.out.println(pos + " [" + minTrackPosition.get() + " " + maxTrackPosition.get() + "]");
-            if(pos < minTrackPosition.get()) {
-               scrollPosition.set(pos);
-            }
-            if(pos > maxTrackPosition.get()) {
-               scrollPosition.set(Math.min(pos - 7, trackCount.get() - 8));
-            }
-         }
-         mSurface.invalidateHardwareOutputState();
-         host.requestFlush();
-      };
-      cursorPosition.addValueObserver(cursorUpdate);
-      minTrackPosition.addValueObserver(mtp -> cursorUpdate.valueChanged(cursorPosition.get()));
-      maxTrackPosition.addValueObserver(mtp -> cursorUpdate.valueChanged(cursorPosition.get()));
 
       // Create surface buttons and their lights
       mSurface.setPhysicalSize(241, 241);
