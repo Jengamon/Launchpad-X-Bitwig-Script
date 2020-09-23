@@ -2,7 +2,6 @@ package io.github.jengamon.novation.modes.session;
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.controller.api.*;
-import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 import io.github.jengamon.novation.surface.state.FaderLightState;
 
@@ -30,8 +29,6 @@ public class TrackColorFaderLight {
     public void draw(MultiStateHardwareLight faderLight) {
         if(mValid.get()) {
             Color color = mColor.get();
-
-            System.out.println(Utils.printColor(color));
 
             if(color.getRed() + color.getBlue() + color.getGreen() == 0.0) {
                 faderLight.state().setValue(new FaderLightState((byte)1));
