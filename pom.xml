@@ -30,20 +30,7 @@
 
 	<build>
 		<plugins>
-		   <plugin>
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-compiler-plugin</artifactId>
-               <version>3.8.0</version>
-               <configuration>
-                  <optimize>true</optimize>
-                  <fork>true</fork>
-                  <source>1.8</source>
-                  <target>1.8</target>
-                  <encoding>UTF-8</encoding>
-                  <maxmem>1024m</maxmem>
-               </configuration>
-         </plugin>
-		
+
 			<plugin>
 				<groupId>com.coderplus.maven.plugins</groupId>
 				<artifactId>copy-rename-maven-plugin</artifactId>
@@ -62,6 +49,35 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.0</version>
+				<executions>
+					<execution>
+						<id>compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>testCompile</id>
+						<phase>test-compile</phase>
+						<goals>
+							<goal>testCompile</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+				   <optimize>true</optimize>
+				   <fork>true</fork>
+				   <source>1.8</source>
+				   <target>1.8</target>
+				   <encoding>UTF-8</encoding>
+				   <maxmem>1024m</maxmem>
+				</configuration>
+		  </plugin>
 		</plugins>
 	</build>
 

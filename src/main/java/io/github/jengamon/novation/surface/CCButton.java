@@ -1,16 +1,15 @@
 package io.github.jengamon.novation.surface;
 
 import com.bitwig.extension.controller.api.*;
-import io.github.jengamon.novation.ColorTag;
+import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
-import io.github.jengamon.novation.reactive.SessionSendable;
-import io.github.jengamon.novation.surface.ihls.BasicColor;
+import io.github.jengamon.novation.surface.state.PadLightState;
 
 /**
  * Represents a pad that communicates with the device over CC.
  */
-public class CCButton implements LaunchpadXPad {
+public class CCButton extends LaunchpadXPad {
     private HardwareButton mButton;
     private MultiStateHardwareLight mLight;
     private int mCC;
@@ -23,12 +22,15 @@ public class CCButton implements LaunchpadXPad {
         mButton.setBackgroundLight(mLight);
         mButton.setBounds(x, y, 21, 21);
 
-        mLight.onUpdateHardware(() -> {
-            SessionSendable sendable = (SessionSendable)mLight.state().currentValue();
-            if(sendable != null) {
-                sendable.send(session);
+        mLight.state().onUpdateHardware(state -> {
+            PadLightState padState = (PadLightState)state;
+            if(padState != null) {
+                session.sendMidi(0xB0, cc, padState.solid());
+                if(padState.blink() > 0) session.sendMidi(0xB1, cc, padState.blink());
+                if(padState.pulse() > 0) session.sendMidi(0xB2, cc, padState.pulse());
             }
         });
+        mLight.setColorToStateFunction(color -> PadLightState.solidLight(Utils.toNovation(color)));
 
         MidiIn in = session.midiIn(ChannelType.DAW);
 
@@ -51,11 +53,6 @@ public class CCButton implements LaunchpadXPad {
 
     @Override
     public MultiStateHardwareLight light() { return mLight; }
-
-    @Override
-    public void resetColor() {
-        mLight.state().setValue(new BasicColor(ColorTag.NULL_COLOR, 0xB0, new int[]{0}, mCC));
-    }
 
     @Override
     public int id() {

@@ -1,10 +1,11 @@
 package io.github.jengamon.novation.surface;
 
+import com.bitwig.extension.api.Color;
 import com.bitwig.extension.controller.api.*;
-import io.github.jengamon.novation.ColorTag;
+import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
-import io.github.jengamon.novation.reactive.FaderSendable;
+import io.github.jengamon.novation.surface.state.FaderLightState;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,18 +16,18 @@ public class Fader {
 
     private MidiIn mIn;
 
-    public Fader(ControllerHost host, Session session, HardwareSurface surface, String name, double x, double y) {
+    public Fader(Session session, HardwareSurface surface, String name, double x, double y) {
         mFader = surface.createAbsoluteHardwareKnob(name);
         mLight = surface.createMultiStateHardwareLight("L" + name);
 
         mFader.setBackgroundLight(mLight);
         mLight.state().onUpdateHardware(state -> {
-            FaderSendable sendable = (FaderSendable)state;
-            if(sendable != null) {
-                ColorTag color = sendable.faderColor();
-                session.sendMidi(0xB5, mCC.get(), color.selectNovationColor());
+            FaderLightState faderState = (FaderLightState)state;
+            if(faderState != null) {
+                session.sendMidi(0xB5, mCC.get(), faderState.solid());
             }
         });
+        mLight.setColorToStateFunction(color -> new FaderLightState(Utils.toNovation(color)));
 
         BooleanValue isUpdating = mFader.isUpdatingTargetValue();
         isUpdating.markInterested();
@@ -42,17 +43,7 @@ public class Fader {
     }
 
     public void resetColor() {
-        mLight.state().setValue(new FaderSendable() {
-            @Override
-            public ColorTag faderColor() {
-                return ColorTag.NULL_COLOR;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                return false;
-            }
-        });
+        mLight.setColor(Color.nullColor());
     }
 
     public int id() { return mCC.get(); }
