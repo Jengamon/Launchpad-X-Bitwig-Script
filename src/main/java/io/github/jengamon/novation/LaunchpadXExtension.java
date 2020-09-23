@@ -1,20 +1,19 @@
 package io.github.jengamon.novation;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
+import com.bitwig.extension.callback.IntegerValueChangedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.HostErrorOutputStream;
 import io.github.jengamon.novation.internal.HostOutputStream;
 import io.github.jengamon.novation.internal.Session;
-import io.github.jengamon.novation.reactive.SessionSendableLightState;
-import io.github.jengamon.novation.reactive.atomics.BooleanSyncWrapper;
-import io.github.jengamon.novation.reactive.modes.AbstractMode;
-import io.github.jengamon.novation.reactive.modes.DrumPadMode;
-import io.github.jengamon.novation.reactive.modes.SessionMode;
-import io.github.jengamon.novation.reactive.modes.mixer.*;
+import io.github.jengamon.novation.modes.AbstractMode;
+import io.github.jengamon.novation.modes.DrumPadMode;
+import io.github.jengamon.novation.modes.SessionMode;
+import io.github.jengamon.novation.modes.mixer.*;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
-import io.github.jengamon.novation.surface.ihls.BasicColor;
+import io.github.jengamon.novation.surface.state.PadLightState;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -42,6 +41,7 @@ public class LaunchpadXExtension extends ControllerExtension
       Preferences prefs = host.getPreferences();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
+      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
       EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
@@ -66,14 +66,35 @@ public class LaunchpadXExtension extends ControllerExtension
          }
       });
 
-      BooleanSyncWrapper pulseSessionPads = new BooleanSyncWrapper(mPulseSessionPads, mSurface, host);
+      SettableIntegerValue scrollPosition = mSessionTrackBank.scrollPosition();
+      IntegerValue minTrackPosition = mSessionTrackBank.getItemAt(0).position();
+      IntegerValue maxTrackPosition = mSessionTrackBank.getItemAt(7).position();
+      IntegerValue cursorPosition = mCursorTrack.position();
+      IntegerValue trackCount = mSessionTrackBank.itemCount();
+      trackCount.markInterested();
+      IntegerValueChangedCallback cursorUpdate = pos -> {
+         if(mFollowCursorTrack.get() && pos != -1) {
+            System.out.println(pos + " [" + minTrackPosition.get() + " " + maxTrackPosition.get() + "]");
+            if(pos < minTrackPosition.get()) {
+               scrollPosition.set(pos);
+            }
+            if(pos > maxTrackPosition.get()) {
+               scrollPosition.set(Math.min(pos - 7, trackCount.get() - 8));
+            }
+         }
+         mSurface.invalidateHardwareOutputState();
+         host.requestFlush();
+      };
+      cursorPosition.addValueObserver(cursorUpdate);
+      minTrackPosition.addValueObserver(mtp -> cursorUpdate.valueChanged(cursorPosition.get()));
+      maxTrackPosition.addValueObserver(mtp -> cursorUpdate.valueChanged(cursorPosition.get()));
 
       // Create surface buttons and their lights
       mSurface.setPhysicalSize(241, 241);
       mLSurface = new LaunchpadXSurface(host, mSession, mSurface);
       mMachine = new ModeMachine(mSession);
-      mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mSurface, host, pulseSessionPads));
-      mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mSurface, mCursorDevice));
+      mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mLSurface, host, mPulseSessionPads));
+      mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mLSurface, mCursorDevice));
       mMachine.register(Mode.UNKNOWN, new AbstractMode() {
          @Override
          public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
@@ -83,14 +104,14 @@ public class LaunchpadXExtension extends ControllerExtension
 
       // Mixer modes
       AtomicReference<Mode> mixerMode = new AtomicReference<>(Mode.MIXER_VOLUME);
-      mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_PAN, new PanMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_SEND, new SendMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack));
-      mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack));
-      mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mMachine, mixerMode, host, mTransport, mLSurface, mSurface, mCursorTrack, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_PAN, new PanMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_SEND, new SendMixer(mixerMode, host, mTransport, mLSurface, mCursorTrack));
+      mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mCursorDevice));
+      mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+      mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
 //      MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
 
       // Select record button behavior and light it accordingly
@@ -99,6 +120,7 @@ public class LaunchpadXExtension extends ControllerExtension
       AtomicBoolean recordLevelGlobal = new AtomicBoolean(false);
       mRecordAction.addValueObserver(val -> recordActionToggle.set(val.equals("Toggle Record")));
       mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global")));
+
       Runnable selectAction = () -> {
          if(recordActionToggle.get()) {
             if(recordLevelGlobal.get()) {
@@ -121,41 +143,25 @@ public class LaunchpadXExtension extends ControllerExtension
 
       AtomicBoolean recordEnabled = new AtomicBoolean(false);
       AtomicBoolean overdubEnabled = new AtomicBoolean(false);
-      mTransport.isArrangerRecordEnabled().addValueObserver(are -> {
-         mSurface.invalidateHardwareOutputState();
-         recordEnabled.set(are);
+      MultiStateHardwareLight recordLight = mLSurface.record().light();
+      BooleanValue arrangerRecord = mTransport.isArrangerRecordEnabled();
+      BooleanValue clipLauncherOverdub = mTransport.isClipLauncherOverdubEnabled();
+      arrangerRecord.addValueObserver(are -> {
+         if(are || clipLauncherOverdub.get()) {
+            recordLight.state().setValue(PadLightState.solidLight(5));
+         } else {
+            recordLight.state().setValue(PadLightState.solidLight(7));
+         }
       });
-      mTransport.isClipLauncherOverdubEnabled().addValueObserver(ode -> {
-         mSurface.invalidateHardwareOutputState();
-         overdubEnabled.set(ode);
+      clipLauncherOverdub.addValueObserver(ode -> {
+         if(ode || arrangerRecord.get()) {
+            recordLight.state().setValue(PadLightState.solidLight(5));
+         } else {
+            recordLight.state().setValue(PadLightState.solidLight(7));
+         }
       });
-      SessionSendableLightState recordLightState = new SessionSendableLightState() {
-         ColorTag getLightState() {
-            if(recordEnabled.get() || overdubEnabled.get()) {
-               return new ColorTag(255, 97, 97);
-            } else {
-               return new ColorTag(179, 97, 97);
-            }
-         }
 
-         @Override
-         public HardwareLightVisualState getVisualState() {
-            return HardwareLightVisualState.createForColor(getLightState().toBitwigColor());
-         }
-
-         @Override
-         public boolean equals(Object obj) {
-            return false;
-         }
-
-         @Override
-         public void send(Session session) {
-            session.sendMidi(0xB0, 98, getLightState().selectNovationColor());
-         }
-      };
-      mLSurface.record().light().state().setValue(recordLightState);
-      int nid = mLSurface.novation().id();
-      mLSurface.novation().light().state().setValue(new BasicColor(new ColorTag(0xff, 0xff, 0xff), 0xB0, new int[]{0}, nid));
+      mLSurface.novation().light().state().setValue(PadLightState.solidLight(1));
 
       AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
       HardwareActionBindable mSessionAction = host.createAction(() -> {
@@ -219,6 +225,8 @@ public class LaunchpadXExtension extends ControllerExtension
       mSession.setMidiCallback(ChannelType.CUSTOM, this::onMidi1);
 
       System.out.println("Launchpad X Initialized");
+
+      host.requestFlush();
    }
 
    @Override
@@ -232,14 +240,13 @@ public class LaunchpadXExtension extends ControllerExtension
    public void flush()
    {
       mSurface.updateHardware();
-      mSession.forceSend();
    }
 
    /** Called when we receive short MIDI message on port 0. */
    private void onMidi0(ShortMidiMessage msg)
    {
-      mSurface.invalidateHardwareOutputState();
-      System.out.println(msg);
+//      mSurface.invalidateHardwareOutputState();
+//      System.out.println(msg);
    }
 
    /** Called when we receive sysex MIDI message on port 0. */

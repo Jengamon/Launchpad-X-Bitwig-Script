@@ -1,32 +1,23 @@
 package io.github.jengamon.novation.surface;
 
 import com.bitwig.extension.controller.api.*;
-import io.github.jengamon.novation.ColorTag;
+import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
-import io.github.jengamon.novation.reactive.SessionSendable;
-import io.github.jengamon.novation.surface.ihls.BasicColor;
+import io.github.jengamon.novation.surface.state.PadLightState;
 
 /**
  * Represents a pad the communicates with NoteOn events
  * These are slightly more complicated than the CC button devices as they have 2 notes,
  * a drum pad mode note and a session view note
  */
-public class NoteButton implements LaunchpadXPad {
-    public enum Mode {
-        SESSION,
-        DRUM,
-    }
+public class NoteButton extends LaunchpadXPad {
     private HardwareButton mButton;
     private AbsoluteHardwareKnob mAftertouch;
-
-    private HardwareButton mDrumButton;
-    private AbsoluteHardwareKnob mDrumAftertouch;
 
     private MultiStateHardwareLight mLight;
     private int mNote;
     private int mDPNote;
-    private Mode mMode = Mode.SESSION;
 
     public NoteButton(ControllerHost host, Session session, HardwareSurface surface, String name, int note, int dpnote, double x, double y) {
         mNote = note;
@@ -35,24 +26,24 @@ public class NoteButton implements LaunchpadXPad {
         mButton = surface.createHardwareButton(name);
         mAftertouch = surface.createAbsoluteHardwareKnob("AFT" + name);
 
-        mDrumButton = surface.createHardwareButton("D" + name);
-        mDrumAftertouch = surface.createAbsoluteHardwareKnob("DAFT" + name);
-
         mLight = surface.createMultiStateHardwareLight("L" + name);
         mButton.setBackgroundLight(mLight);
-        mDrumButton.setBackgroundLight(mLight);
         mButton.setBounds(x, y, 21, 21);
-        mDrumButton.setBounds(x, y, 21, 21);
-        mDrumButton.setLabel(" ");
         mButton.setLabel(" "); // Don't label note pads
 
         // Upload the state to the hardware
         mLight.state().onUpdateHardware(state -> {
-            SessionSendable sendable = (SessionSendable)state;
-            if(sendable != null) {
-                sendable.send(session);
+            PadLightState padState = (PadLightState)state;
+            if(padState != null) {
+                session.sendMidi(0x90, note, padState.solid());
+                session.sendMidi(0x98, dpnote, padState.solid());
+                if(padState.blink() > 0) session.sendMidi(0x91, note, padState.blink());
+                if(padState.blink() > 0) session.sendMidi(0x99, dpnote, padState.blink());
+                if(padState.pulse() > 0) session.sendMidi(0x92, note, padState.pulse());
+                if(padState.pulse() > 0) session.sendMidi(0x9A, dpnote, padState.pulse());
             }
         });
+        mLight.setColorToStateFunction(color -> PadLightState.solidLight(Utils.toNovation(color)));
 
         MidiIn in = session.midiIn(ChannelType.DAW);
 
@@ -71,47 +62,36 @@ public class NoteButton implements LaunchpadXPad {
         AbsoluteHardwareValueMatcher onAftertouch = in.createPolyAftertouchValueMatcher(0, note);
         HardwareActionMatcher onDrumRelease = in.createActionMatcher("status == 0x98 && data1 == " + dpnote + " && data2 == 0");
         AbsoluteHardwareValueMatcher onDrumPolyAfterOff = in.createAbsoluteValueMatcher( drumAftExpr + " && data2 == 0", "data2", 8);
-        AbsoluteHardwareValueMatcher onDrumVelocity = in.createNoteOnVelocityValueMatcher(8, dpnote);;
+        AbsoluteHardwareValueMatcher onDrumVelocity = in.createNoteOnVelocityValueMatcher(8, dpnote);
         AbsoluteHardwareValueMatcher onDrumAftertouch = in.createPolyAftertouchValueMatcher(8, dpnote);
         AbsoluteHardwareValueMatcher onDrumChannelPressure = in.createAbsoluteValueMatcher("status == 0xD8", "data1", 7);
 
         mButton.setAftertouchControl(mAftertouch);
-        mAftertouch.setAdjustValueMatcher(host.createOrAbsoluteHardwareValueMatcher(onAftertouch, onChannelPressure));
-        mButton.pressedAction().setPressureActionMatcher(onVelocity);
-        mButton.releasedAction().setActionMatcher(onRelease);
-        mButton.releasedAction().setPressureActionMatcher(onAfterRelease);
-
-        mDrumButton.setAftertouchControl(mDrumAftertouch);
-        mDrumAftertouch.setAdjustValueMatcher(host.createOrAbsoluteHardwareValueMatcher(onDrumAftertouch, onDrumChannelPressure));
-        mDrumButton.pressedAction().setPressureActionMatcher(onDrumVelocity);
-        mDrumButton.releasedAction().setActionMatcher(onDrumRelease);
-        mDrumButton.releasedAction().setPressureActionMatcher(onDrumPolyAfterOff);
-    }
-
-    public void setButtonMode(NoteButton.Mode mode) {
-        mMode = mode;
+        mAftertouch.setAdjustValueMatcher(
+                host.createOrAbsoluteHardwareValueMatcher(
+                        host.createOrAbsoluteHardwareValueMatcher(onAftertouch, onChannelPressure),
+                        host.createOrAbsoluteHardwareValueMatcher(onDrumAftertouch, onDrumChannelPressure)
+                )
+        );
+        mButton.pressedAction().setPressureActionMatcher(
+                host.createOrAbsoluteHardwareValueMatcher(onVelocity, onDrumVelocity)
+        );
+        mButton.releasedAction().setActionMatcher(
+                host.createOrHardwareActionMatcher(onRelease, onDrumRelease)
+        );
+        mButton.releasedAction().setPressureActionMatcher(
+                host.createOrAbsoluteHardwareValueMatcher(onAfterRelease, onDrumPolyAfterOff)
+        );
     }
 
     @Override
     public HardwareButton button() {
-        switch(mMode) {
-            case SESSION:
-                return mButton;
-            case DRUM:
-                return mDrumButton;
-        }
-        return null;
+        return mButton;
     }
 
     @Override
     public AbsoluteHardwareKnob aftertouch() {
-        switch(mMode) {
-            case SESSION:
-                return mAftertouch;
-            case DRUM:
-                return mDrumAftertouch;
-        }
-        return null;
+        return mAftertouch;
     }
 
     @Override
@@ -120,18 +100,11 @@ public class NoteButton implements LaunchpadXPad {
     }
 
     @Override
-    public void resetColor() {
-        mLight.state().setValue(new BasicColor(ColorTag.NULL_COLOR, 0x90, new int[]{0, 8}, mNote, mDPNote));
+    public int id() {
+        return mNote;
     }
 
-    @Override
-    public int id() {
-        switch(mMode) {
-            case SESSION:
-                return mNote;
-            case DRUM:
-                return mDPNote;
-        }
-        return 0;
+    public int drum_id() {
+        return mDPNote;
     }
 }

@@ -32,6 +32,7 @@ public class LaunchpadXSurface {
     public LaunchpadXPad down() { return mDownArrow; }
     public LaunchpadXPad left() { return  mLeftArrow; }
     public LaunchpadXPad right() { return mRightArrow; }
+    public LaunchpadXPad[] arrows() { return new LaunchpadXPad[] {mUpArrow, mDownArrow, mLeftArrow, mRightArrow}; }
 
     public LaunchpadXPad session() { return mSessionButton; }
     public LaunchpadXPad note() { return mNoteButton; }
@@ -83,7 +84,7 @@ public class LaunchpadXSurface {
 
         mFaders = new Fader[8];
         for(int i = 0; i < 8; i++) {
-            mFaders[i] = new Fader(host, session, surface, "FV" + i,0, i * 20);
+            mFaders[i] = new Fader(session, surface, "FV" + i,0, i * 20);
         }
     }
 

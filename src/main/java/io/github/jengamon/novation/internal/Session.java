@@ -6,7 +6,6 @@ import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.controller.api.NoteInput;
-import io.github.jengamon.novation.Utils;
 
 public class Session {
     private MidiIn dawIn;
@@ -34,7 +33,7 @@ public class Session {
         // Switch on DAW mode (if not already)
         sendSysex("10 01");
 
-        forceSend();
+//        forceSend();
     }
 
     public void setMidiCallback(ChannelType type, ShortMidiMessageReceivedCallback clbk) {
@@ -84,15 +83,7 @@ public class Session {
     }
 
     public void sendSysex(String message) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(SYSEX_HEADER);
-        builder.append(" ");
-        builder.append(message);
-        builder.append(" ");
-        builder.append("f7");
-
-        String sysex = builder.toString();
-//        System.out.println(sysex);
+        String sysex = SYSEX_HEADER + " " + message + " f7";
         dawOut.sendSysex(sysex);
     }
 
@@ -103,13 +94,10 @@ public class Session {
 
     public void shutdown() {
         sendSysex("10 00");
-        forceSend();
+//        forceSend();
     }
 
+    @Deprecated
     public void forceSend() {
-//        for(int i = 0; i < 50; i++) {
-//            sendMidi(0, 0, 0);
-//        }
-        // NOOP for 3.2 beta onwards hopefully as they might have fixed the bug this was meant to solve.
     }
 }
