@@ -53,7 +53,7 @@ public class StopClipMixer extends AbstractSessionMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 4, 120);
+        drawMixerModeIndicator(surface, 4, 5);
 
         NoteButton[] finalRow = getFinalRow(surface);
         for(int i = 0; i < finalRow.length; i++) {

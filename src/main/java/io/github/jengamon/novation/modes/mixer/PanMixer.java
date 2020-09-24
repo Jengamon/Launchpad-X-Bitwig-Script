@@ -43,7 +43,7 @@ public class PanMixer extends AbstractFaderMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 1, 104);
+        drawMixerModeIndicator(surface, 1, 80);
 
         Fader[] faders = surface.faders();
         for(int i = 0; i < faders.length; i++) {

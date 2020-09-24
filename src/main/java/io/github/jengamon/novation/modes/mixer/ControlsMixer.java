@@ -62,7 +62,7 @@ public class ControlsMixer extends AbstractFaderMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 3, 69);
+        drawMixerModeIndicator(surface, 3, 68);
 
         Fader[] faders = surface.faders();
         for(int i = 0; i < 8; i++) {

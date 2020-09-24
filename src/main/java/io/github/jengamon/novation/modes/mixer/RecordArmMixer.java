@@ -34,9 +34,9 @@ public class RecordArmMixer extends AbstractSessionMixerMode {
         public void draw(MultiStateHardwareLight light) {
             if(mExists.get()) {
                 if(mArm.get()) {
-                    light.state().setValue(PadLightState.solidLight(5));
+                    light.state().setValue(PadLightState.solidLight(120));
                 } else if (mHasNoteInput.get() || mHasAudioInput.get()) {
-                    light.state().setValue(PadLightState.solidLight(7));
+                    light.state().setValue(PadLightState.solidLight(121));
                 } else {
                     light.setColor(Color.nullColor());
                 }
@@ -62,7 +62,7 @@ public class RecordArmMixer extends AbstractSessionMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 7, 72);
+        drawMixerModeIndicator(surface, 7, 120);
 
         NoteButton[] finalRow = getFinalRow(surface);
         for(int i = 0; i < finalRow.length; i++) {

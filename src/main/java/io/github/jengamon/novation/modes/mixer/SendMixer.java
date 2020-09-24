@@ -45,7 +45,7 @@ public class SendMixer extends AbstractFaderMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 2, 103);
+        drawMixerModeIndicator(surface, 2, 82);
 
         Fader[] faders = surface.faders();
         for(int i = 0; i < faders.length; i++) {
