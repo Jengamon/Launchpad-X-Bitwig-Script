@@ -74,8 +74,16 @@ public class ControlsMixer extends AbstractFaderMixerMode {
     public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
         List<HardwareBinding> list = super.onBind(surface);
 
+        // Figure out if the faders should be bipolar or not
+        // WARNING Very hacky
+        boolean[] bipolar = new boolean[8];
+        for(int i = 0; i < bipolar.length; i++) {
+            // TODO Determine if parameter is bipolar or not
+            bipolar[i] = false;
+        }
+
         // Enable faders
-        surface.setupFaders(true, false, 45);
+        surface.setupFaders(true, bipolar, 45);
 
         for(int i = 0; i < 8; i++) {
             Fader controlFader = surface.faders()[i];

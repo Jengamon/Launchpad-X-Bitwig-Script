@@ -5,6 +5,8 @@ import com.bitwig.extension.controller.api.HardwareSurface;
 import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.internal.Session;
 
+import java.util.Arrays;
+
 public class LaunchpadXSurface {
     private CCButton mUpArrow;
     private CCButton mDownArrow;
@@ -89,6 +91,12 @@ public class LaunchpadXSurface {
     }
 
     public void setupFaders(boolean vertical, boolean bipolar, int baseCC) {
+        boolean[] bipolars = new boolean[8];
+        Arrays.fill(bipolars, bipolar);
+        setupFaders(vertical, bipolars, baseCC);
+    }
+
+    public void setupFaders(boolean vertical, boolean[] bipolar, int baseCC) {
         StringBuilder sysexString = new StringBuilder();
         sysexString.append("01 00");
         if(vertical) {
@@ -100,7 +108,7 @@ public class LaunchpadXSurface {
         for(int i = 0; i < 8; i++) {
             int cc = baseCC + i;
             sysexString.append(Utils.toHexString((byte)i));
-            if(bipolar) {
+            if(bipolar[i]) {
                 sysexString.append("01");
             } else {
                 sysexString.append("00");

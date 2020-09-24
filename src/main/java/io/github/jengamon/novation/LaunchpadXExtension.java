@@ -137,7 +137,7 @@ public class LaunchpadXExtension extends ControllerExtension
          }
       });
 
-      mLSurface.novation().light().state().setValue(PadLightState.solidLight(1));
+      mLSurface.novation().light().state().setValue(PadLightState.solidLight(3));
 
       AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
       HardwareActionBindable mSessionAction = host.createAction(() -> {
@@ -164,7 +164,6 @@ public class LaunchpadXExtension extends ControllerExtension
             default:
                throw new RuntimeException("Unknown mode " + mMachine.mode());
          }
-         host.requestFlush();
       }, () -> "Press Session View");
 
       HardwareActionBindable mNoteAction = host.createAction(() -> {
@@ -174,7 +173,6 @@ public class LaunchpadXExtension extends ControllerExtension
          }
          mSession.sendSysex("00 01");
          mMachine.setMode(mLSurface, Mode.DRUM);
-         host.requestFlush();
       }, () -> "Press Note View");
 
       HardwareActionBindable mCustomAction = host.createAction(() -> {
@@ -183,7 +181,6 @@ public class LaunchpadXExtension extends ControllerExtension
             lastSessionMode.set(om);
          }
          mMachine.setMode(mLSurface, Mode.UNKNOWN);
-         host.requestFlush();
       }, () -> "Press Custom View");
 
       if(mSwapOnBoot.get()) {
