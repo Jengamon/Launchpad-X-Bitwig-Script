@@ -42,7 +42,7 @@ public class SessionMode extends AbstractMode {
             Color baseColor = mSceneColor.get();
             if(mSceneExists.get()) {
                 if(mPulseSessionPads.get()) {
-                    sceneLight.state().setValue(PadLightState.pulseLight(mBPM.get(), Utils.toNovation(baseColor)));
+                    sceneLight.state().setValue(PadLightState.pulseLight(mBPM.getRaw(), Utils.toNovation(baseColor)));
                 } else {
                     sceneLight.setColor(baseColor);
                 }

@@ -44,6 +44,7 @@ public class LaunchpadXExtension extends ControllerExtension
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
       EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
       EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
+      BooleanValue mStopClipsBeforeToggle = prefs.getBooleanSetting("Stop Recording Clips before Toggle Record?", "Record Button", false);
 
       // Replace System.out and System.err with ones that should actually work
       System.setOut(new PrintStream(new HostOutputStream(host)));
@@ -97,12 +98,47 @@ public class LaunchpadXExtension extends ControllerExtension
       mRecordAction.addValueObserver(val -> recordActionToggle.set(val.equals("Toggle Record")));
       mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global")));
 
+      ClipLauncherSlotBank[] clsBanks = new ClipLauncherSlotBank[8];
+      for(int i = 0; i < mSessionTrackBank.getSizeOfBank(); i++) {
+         Track track = mSessionTrackBank.getItemAt(i);
+         ClipLauncherSlotBank slotbank = track.clipLauncherSlotBank();
+         clsBanks[i] = slotbank;
+         for(int j = 0; j < slotbank.getSizeOfBank(); j++) {
+            ClipLauncherSlot slot = slotbank.getItemAt(j);
+            slot.isRecording().markInterested();
+         }
+      }
+
       Runnable selectAction = () -> {
          if(recordActionToggle.get()) {
-            if(recordLevelGlobal.get()) {
-               mTransport.isArrangerRecordEnabled().toggle();
-            } else {
-               mTransport.isClipLauncherOverdubEnabled().toggle();
+            boolean clipStopped = false;
+
+            if(mStopClipsBeforeToggle.get()) {
+               for(ClipLauncherSlotBank bank : clsBanks) {
+                  int targetSlot = -1;
+                  for(int i = 0; i < bank.getSizeOfBank(); i++) {
+                     ClipLauncherSlot slot = bank.getItemAt(i);
+                     if(slot.isRecording().get()) {
+                        targetSlot = i;
+                        break;
+                     }
+                  }
+
+                  if(targetSlot >= 0) {
+                     clipStopped = true;
+                     bank.stop();
+                     bank.launch(targetSlot);
+                  }
+               }
+            }
+
+            // Only toggle the record button if we *didn't* stop any clips.
+            if(!clipStopped) {
+               if (recordLevelGlobal.get()) {
+                  mTransport.isArrangerRecordEnabled().toggle();
+               } else {
+                  mTransport.isClipLauncherOverdubEnabled().toggle();
+               }
             }
          } else {
             if(mCursorTrack.hasNext().get()) {
@@ -116,9 +152,7 @@ public class LaunchpadXExtension extends ControllerExtension
 
       HardwareActionBindable recordState = host.createAction(selectAction, () -> "Press Record Button");
       mLSurface.record().button().pressedAction().setBinding(recordState);
-
-      AtomicBoolean recordEnabled = new AtomicBoolean(false);
-      AtomicBoolean overdubEnabled = new AtomicBoolean(false);
+      
       MultiStateHardwareLight recordLight = mLSurface.record().light();
       BooleanValue arrangerRecord = mTransport.isArrangerRecordEnabled();
       BooleanValue clipLauncherOverdub = mTransport.isClipLauncherOverdubEnabled();
@@ -137,7 +171,7 @@ public class LaunchpadXExtension extends ControllerExtension
          }
       });
 
-      mLSurface.novation().light().state().setValue(PadLightState.solidLight(1));
+      mLSurface.novation().light().state().setValue(PadLightState.solidLight(3));
 
       AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
       HardwareActionBindable mSessionAction = host.createAction(() -> {
@@ -164,7 +198,6 @@ public class LaunchpadXExtension extends ControllerExtension
             default:
                throw new RuntimeException("Unknown mode " + mMachine.mode());
          }
-         host.requestFlush();
       }, () -> "Press Session View");
 
       HardwareActionBindable mNoteAction = host.createAction(() -> {
@@ -174,7 +207,6 @@ public class LaunchpadXExtension extends ControllerExtension
          }
          mSession.sendSysex("00 01");
          mMachine.setMode(mLSurface, Mode.DRUM);
-         host.requestFlush();
       }, () -> "Press Note View");
 
       HardwareActionBindable mCustomAction = host.createAction(() -> {
@@ -183,7 +215,6 @@ public class LaunchpadXExtension extends ControllerExtension
             lastSessionMode.set(om);
          }
          mMachine.setMode(mLSurface, Mode.UNKNOWN);
-         host.requestFlush();
       }, () -> "Press Custom View");
 
       if(mSwapOnBoot.get()) {

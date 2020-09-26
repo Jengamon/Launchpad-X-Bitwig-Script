@@ -47,7 +47,7 @@ public abstract class AbstractMixerMode extends AbstractMode {
         for(int i = 0; i < 8; i++) {
             LaunchpadXPad scene = surface.scenes()[i];
             if(i == padIndex) {
-                scene.light().state().setValue(PadLightState.pulseLight(mBPM.get(), color));
+                scene.light().state().setValue(PadLightState.pulseLight(mBPM.getRaw(), color));
             } else {
                 scene.light().state().setValue(PadLightState.solidLight(1));
             }

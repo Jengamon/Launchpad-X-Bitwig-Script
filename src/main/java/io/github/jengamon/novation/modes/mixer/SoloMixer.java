@@ -28,9 +28,9 @@ public class SoloMixer extends AbstractSessionMixerMode {
         public void draw(MultiStateHardwareLight light) {
             if(mExists.get()) {
                 if(mSolo.get()) {
-                    light.state().setValue(PadLightState.solidLight(13));
+                    light.state().setValue(PadLightState.solidLight(124));
                 } else {
-                    light.state().setValue(PadLightState.solidLight(15));
+                    light.state().setValue(PadLightState.solidLight(125));
                 }
             } else {
                 light.setColor(Color.nullColor());

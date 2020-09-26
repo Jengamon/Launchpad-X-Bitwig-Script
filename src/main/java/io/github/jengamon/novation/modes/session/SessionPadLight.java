@@ -88,12 +88,9 @@ public class SessionPadLight {
 
             switch(mState) {
                 case QUEUE_RECORD:
-                    blinkColor = 6;
-                    solidColor = 0;
-                    break;
-                case RECORDING:
                     pulseColor = 6;
                     break;
+                case RECORDING:
                 case PLAYING:
                 case STOPPED:
                 case QUEUE_PLAY:
@@ -102,6 +99,6 @@ public class SessionPadLight {
             }
         }
 
-        slotLight.state().setValue(new PadLightState(mBPM.get(), solidColor, blinkColor, pulseColor));
+        slotLight.state().setValue(new PadLightState(mBPM.getRaw(), solidColor, blinkColor, pulseColor));
     }
 }
