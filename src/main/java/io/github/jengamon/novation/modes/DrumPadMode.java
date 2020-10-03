@@ -48,19 +48,24 @@ public class DrumPadMode extends AbstractMode {
         private ColorValue mColor;
         private PlayingNoteArrayValue mPlaying;
         private BooleanValue mExists;
-        public DrumPadLight(LaunchpadXSurface surface, DrumPad drumPad) {
+        private IntegerValue mScrollPosition;
+        private int mOffset;
+        public DrumPadLight(LaunchpadXSurface surface, DrumPad drumPad, int offset, IntegerValue scrollPosition) {
             mColor = drumPad.color();
             mPlaying = drumPad.playingNotes();
             mExists = drumPad.exists();
+            mScrollPosition = scrollPosition;
+            mOffset = offset;
 
             mColor.addValueObserver((r, g, b) -> redraw(surface));
             mPlaying.addValueObserver(notes -> redraw(surface));
             mExists.addValueObserver(e -> redraw(surface));
+            mScrollPosition.addValueObserver(e -> redraw(surface));
         }
 
         public void draw(MultiStateHardwareLight padLight) {
             if(mExists.get()) {
-                if(mPlaying.get().length > 0) {
+                if(mPlaying.isNotePlaying(mOffset + mScrollPosition.get())) {
                     padLight.state().setValue(PadLightState.solidLight(78));
                 } else {
                     padLight.setColor(mColor.get());
@@ -106,7 +111,7 @@ public class DrumPadMode extends AbstractMode {
             BooleanValue hasContent = dpad.exists();
             hasContent.markInterested();
 
-            drumPadLights[i] = new DrumPadLight(surface, dpad);
+            drumPadLights[i] = new DrumPadLight(surface, dpad, i, mDrumBank.scrollPosition());
 
             NoteInput noteOut = session.noteInput();
             int finalI = i;

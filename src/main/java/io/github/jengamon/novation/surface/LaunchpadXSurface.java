@@ -15,7 +15,6 @@ public class LaunchpadXSurface {
     private CCButton mSessionButton;
     private CCButton mNoteButton;
     private CCButton mCustomButton;
-    // Ignore the "Custom" Button
     private CCButton mRecordButton;
     private CCButton mNovationButton;
     private Session mSession;
