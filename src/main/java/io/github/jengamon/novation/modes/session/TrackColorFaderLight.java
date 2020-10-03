@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 public class TrackColorFaderLight {
     private BooleanValue mValid;
     private ColorValue mColor;
+
     public TrackColorFaderLight(LaunchpadXSurface surface, Track track, Consumer<LaunchpadXSurface> redraw) {
         mValid = track.exists();
         mColor = track.color();
