@@ -10,14 +10,14 @@ import io.github.jengamon.novation.surface.state.FaderLightState;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Fader {
-    private AbsoluteHardwareKnob mFader;
+    private HardwareSlider mFader;
     private MultiStateHardwareLight mLight;
     private AtomicInteger mCC = new AtomicInteger(0);
 
     private MidiIn mIn;
 
     public Fader(Session session, HardwareSurface surface, String name, double x, double y) {
-        mFader = surface.createAbsoluteHardwareKnob(name);
+        mFader = surface.createHardwareSlider(name);
         mLight = surface.createMultiStateHardwareLight("L" + name);
 
         mFader.setBackgroundLight(mLight);
@@ -32,13 +32,14 @@ public class Fader {
         BooleanValue isUpdating = mFader.isUpdatingTargetValue();
         isUpdating.markInterested();
         mFader.targetValue().addValueObserver(tv -> {
-            boolean didUpdate = mFader.isUpdatingTargetValue().get();
+            boolean didUpdate = isUpdating.get();
+//            System.out.println("DU>" + didUpdate);
             if(!didUpdate) {
                 session.sendMidi(0xB4, mCC.get(), (int) Math.round(tv * 127));
             }
         });
 
-        mFader.setBounds(x, y, 10, 10);
+        mFader.setBounds(x, y, 10, 23);
         mIn = session.midiIn(ChannelType.DAW);
     }
 
@@ -49,9 +50,9 @@ public class Fader {
     public int id() { return mCC.get(); }
     public void setId(int cc) {
         mCC.set(cc);
-        AbsoluteHardwareValueMatcher faderChange = mIn.createAbsoluteValueMatcher("status == 0xB4 && data1 == " + cc, "data2", 7);
+        AbsoluteHardwareValueMatcher faderChange = mIn.createAbsoluteCCValueMatcher(4, cc);
         mFader.setAdjustValueMatcher(faderChange);
     }
-    public AbsoluteHardwareKnob fader() { return mFader; }
+    public HardwareSlider fader() { return mFader; }
     public MultiStateHardwareLight light() { return mLight; }
 }

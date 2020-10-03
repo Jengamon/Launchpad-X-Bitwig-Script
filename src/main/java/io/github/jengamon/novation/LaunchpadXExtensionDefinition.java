@@ -83,7 +83,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
       else if (platformType == PlatformType.LINUX)
       {
          // TODO Find better guess. Get a Linux.
-         list.add(new String[]{"Launchpad X MIDI", "Launchpad X MIDI 2"}, new String[]{"Launchpad X MIDI", "Launchpad X MIDI 2"});
+         list.add(new String[]{"Launchpad X MIDI 1", "Launchpad X MIDI 2"}, new String[]{"Launchpad X MIDI 1", "Launchpad X MIDI 2"});
       }
    }
 

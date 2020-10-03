@@ -85,7 +85,7 @@ public class LaunchpadXSurface {
 
         mFaders = new Fader[8];
         for(int i = 0; i < 8; i++) {
-            mFaders[i] = new Fader(session, surface, "FV" + i,0, i * 20);
+            mFaders[i] = new Fader(session, surface, "FV" + i,0, i * 24);
         }
     }
 

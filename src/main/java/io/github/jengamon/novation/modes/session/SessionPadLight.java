@@ -5,15 +5,30 @@ import io.github.jengamon.novation.Utils;
 import io.github.jengamon.novation.surface.LaunchpadXSurface;
 import io.github.jengamon.novation.surface.state.PadLightState;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class SessionPadLight {
     private RangedValue mBPM;
-    private State mState;
-    private IntegerValue mSlotIndex;
     private BooleanValue mArmed;
     private BooleanValue mExists;
+    private BooleanValue mHasContent;
     private ColorValue mColor;
+
+    private AtomicInteger mSlotIndex = new AtomicInteger(-1);
+
+    private static class SlotState {
+        public AtomicInteger mStateIndex;
+        public AtomicBoolean mIsQueued;
+
+        public SlotState() {
+            mStateIndex = new AtomicInteger(0);
+            mIsQueued = new AtomicBoolean(false);
+        }
+    }
+
+    private SlotState[] mSlotStates = new SlotState[8];
 
     private enum State {
         STOPPED,
@@ -27,30 +42,52 @@ public class SessionPadLight {
     public SessionPadLight(LaunchpadXSurface surface, ClipLauncherSlot slot, Track track, RangedValue bpm, Consumer<LaunchpadXSurface> redraw) {
         mBPM = bpm;
         mArmed = track.arm();
-        mExists = slot.hasContent();
+        mHasContent = slot.hasContent();
         mColor = slot.color();
-        mSlotIndex = slot.sceneIndex();
-        mState = State.STOPPED;
+        mExists = slot.exists();
 
+        // Also refresh whenever a slot's *existence* value changes ig...
+        mHasContent.addValueObserver(ae -> redraw.accept(surface));
         mBPM.addValueObserver(b -> redraw.accept(surface));
         mArmed.addValueObserver(a -> redraw.accept(surface));
         mExists.addValueObserver(e -> redraw.accept(surface));
         mColor.addValueObserver((r, g, b) -> redraw.accept(surface));
-        mSlotIndex.addValueObserver(si -> redraw.accept(surface));
+
+        for(int i = 0; i < 8; i++) {
+            mSlotStates[i] = new SlotState();
+        }
+
+        slot.sceneIndex().addValueObserver(si -> {mSlotIndex.set(si); redraw.accept(surface);});
         track.clipLauncherSlotBank().addPlaybackStateObserver((slotIndex, state, isQueued) -> {
-            if(slotIndex == mSlotIndex.get()) {
-                if(state == 0) {
-                    mState = (isQueued ? State.QUEUE_STOP : State.STOPPED);
-                } else if (state == 1) {
-                    mState = (isQueued ? State.QUEUE_PLAY : State.PLAYING);
-                } else if (state == 2) {
-                    mState = (isQueued ? State.QUEUE_RECORD : State.RECORDING);
-                } else {
-                    throw new RuntimeException("Invalid state " + state);
-                }
-            }
+            SlotState slotState = mSlotStates[slotIndex];
+            slotState.mStateIndex.set(state);
+            slotState.mIsQueued.set(isQueued);
             redraw.accept(surface);
         });
+    }
+
+    /**
+     * Because Bitwig basically fucks us over with non-descriptive/buggy APIs, we have to do this.
+     *
+     * Calculates the state of a button, given the last updated state and isQueued values of *all* slots.
+     * @return the current state the button should be in.
+     */
+    private State getState() {
+        if(mSlotIndex.get() >= 0) {
+            int state = mSlotStates[mSlotIndex.get()].mStateIndex.get();
+            boolean isQueued = mSlotStates[mSlotIndex.get()].mIsQueued.get();
+            if (state == 0) {
+                return (isQueued ? State.QUEUE_STOP : State.STOPPED);
+            } else if (state == 1) {
+                return (isQueued ? State.QUEUE_PLAY : State.PLAYING);
+            } else if (state == 2) {
+                return (isQueued ? State.QUEUE_RECORD : State.RECORDING);
+            } else {
+                throw new RuntimeException("Invalid state " + state);
+            }
+        } else {
+            return State.STOPPED;
+        }
     }
 
     public void draw(MultiStateHardwareLight slotLight) {
@@ -58,9 +95,11 @@ public class SessionPadLight {
         byte blinkColor = (byte)0;
         byte solidColor = (byte)0;
 
+        State mState = getState();
+
         byte slotColor = Utils.toNovation(mColor.get());
 
-        if(mExists.get()) {
+        if(mExists.get() && mHasContent.get()) {
             solidColor = slotColor;
             switch(mState) {
                 case PLAYING:
