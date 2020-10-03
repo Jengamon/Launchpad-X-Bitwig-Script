@@ -38,13 +38,16 @@ public class LaunchpadXExtension extends ControllerExtension
       final ControllerHost host = getHost();
 
       Preferences prefs = host.getPreferences();
+      DocumentState documentPrefs = host.getDocumentState();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
 //      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
-      EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
-      EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
       BooleanValue mStopClipsBeforeToggle = prefs.getBooleanSetting("Stop Recording Clips before Toggle Record?", "Record Button", false);
+
+      EnumValue mRecordLevel = documentPrefs.getEnumSetting("Rec. Target", "Record Button", new String[]{"Global Record", "Global Overdub", "Clip Launcher"}, "Clip Launcher");
+      EnumValue mRecordAction = documentPrefs.getEnumSetting("Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
+
 
       // Replace System.out and System.err with ones that should actually work
       System.setOut(new PrintStream(new HostOutputStream(host)));
@@ -95,8 +98,10 @@ public class LaunchpadXExtension extends ControllerExtension
       mCursorTrack.hasNext().markInterested();
       AtomicBoolean recordActionToggle = new AtomicBoolean(false);
       AtomicBoolean recordLevelGlobal = new AtomicBoolean(false);
+      AtomicBoolean recordLevelGlobalOverdub = new AtomicBoolean(false);
       mRecordAction.addValueObserver(val -> recordActionToggle.set(val.equals("Toggle Record")));
-      mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global")));
+      mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global Record")));
+      mRecordLevel.addValueObserver(val -> recordLevelGlobalOverdub.set(val.equals("Global Overdub")));
 
       ClipLauncherSlotBank[] clsBanks = new ClipLauncherSlotBank[8];
       for(int i = 0; i < mSessionTrackBank.getSizeOfBank(); i++) {
@@ -136,6 +141,8 @@ public class LaunchpadXExtension extends ControllerExtension
             if(!clipStopped) {
                if (recordLevelGlobal.get()) {
                   mTransport.isArrangerRecordEnabled().toggle();
+               } else if (recordLevelGlobalOverdub.get()) {
+                  mTransport.isArrangerOverdubEnabled().toggle();
                } else {
                   mTransport.isClipLauncherOverdubEnabled().toggle();
                }
@@ -155,16 +162,24 @@ public class LaunchpadXExtension extends ControllerExtension
       
       MultiStateHardwareLight recordLight = mLSurface.record().light();
       BooleanValue arrangerRecord = mTransport.isArrangerRecordEnabled();
+      BooleanValue arrangerOverdub = mTransport.isArrangerOverdubEnabled();
       BooleanValue clipLauncherOverdub = mTransport.isClipLauncherOverdubEnabled();
       arrangerRecord.addValueObserver(are -> {
-         if(are || clipLauncherOverdub.get()) {
+         if(are || clipLauncherOverdub.get() || arrangerOverdub.get()) {
+            recordLight.state().setValue(PadLightState.solidLight(5));
+         } else {
+            recordLight.state().setValue(PadLightState.solidLight(7));
+         }
+      });
+      arrangerOverdub.addValueObserver(aoe -> {
+         if(aoe || clipLauncherOverdub.get() || arrangerRecord.get()) {
             recordLight.state().setValue(PadLightState.solidLight(5));
          } else {
             recordLight.state().setValue(PadLightState.solidLight(7));
          }
       });
       clipLauncherOverdub.addValueObserver(ode -> {
-         if(ode || arrangerRecord.get()) {
+         if(ode || arrangerRecord.get() || arrangerOverdub.get()) {
             recordLight.state().setValue(PadLightState.solidLight(5));
          } else {
             recordLight.state().setValue(PadLightState.solidLight(7));
