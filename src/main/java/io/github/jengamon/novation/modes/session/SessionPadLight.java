@@ -121,7 +121,7 @@ public class SessionPadLight {
                     break;
             }
         } else {
-            if(mArmed.get()) {
+            if(mArmed.get() && mExists.get()) {
                 solidColor = 0x7;
             }
 
