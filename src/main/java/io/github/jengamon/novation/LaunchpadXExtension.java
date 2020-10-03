@@ -38,13 +38,15 @@ public class LaunchpadXExtension extends ControllerExtension
       final ControllerHost host = getHost();
 
       Preferences prefs = host.getPreferences();
+      DocumentState documentPrefs = host.getDocumentState();
       BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
       BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
 //      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
       BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
-      EnumValue mRecordLevel = prefs.getEnumSetting("Record Level", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
-      EnumValue mRecordAction = prefs.getEnumSetting("Record Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
       BooleanValue mStopClipsBeforeToggle = prefs.getBooleanSetting("Stop Recording Clips before Toggle Record?", "Record Button", false);
+
+      EnumValue mRecordLevel = documentPrefs.getEnumSetting("Rec. Target", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
+      EnumValue mRecordAction = documentPrefs.getEnumSetting("Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
 
       // Replace System.out and System.err with ones that should actually work
       System.setOut(new PrintStream(new HostOutputStream(host)));
@@ -56,7 +58,7 @@ public class LaunchpadXExtension extends ControllerExtension
       Transport mTransport = host.createTransport();
       CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
       CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
-      TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8);
+      TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
       mSessionTrackBank.setSkipDisabledItems(true);
 
       mViewableBanks.addValueObserver(vb -> {
