@@ -9,7 +9,9 @@ import io.github.jengamon.novation.surface.NoteButton;
 import io.github.jengamon.novation.surface.state.PadLightState;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DrumPadMode extends AbstractMode {
@@ -46,26 +48,20 @@ public class DrumPadMode extends AbstractMode {
 
     private class DrumPadLight {
         private ColorValue mColor;
-        private PlayingNoteArrayValue mPlaying;
+        private AtomicBoolean mPlaying;
         private BooleanValue mExists;
-        private IntegerValue mScrollPosition;
-        private int mOffset;
-        public DrumPadLight(LaunchpadXSurface surface, DrumPad drumPad, int offset, IntegerValue scrollPosition) {
+        public DrumPadLight(LaunchpadXSurface surface, DrumPad drumPad, AtomicBoolean playing) {
             mColor = drumPad.color();
-            mPlaying = drumPad.playingNotes();
+            mPlaying = playing;
             mExists = drumPad.exists();
-            mScrollPosition = scrollPosition;
-            mOffset = offset;
 
             mColor.addValueObserver((r, g, b) -> redraw(surface));
-            mPlaying.addValueObserver(notes -> redraw(surface));
             mExists.addValueObserver(e -> redraw(surface));
-            mScrollPosition.addValueObserver(e -> redraw(surface));
         }
 
         public void draw(MultiStateHardwareLight padLight) {
             if(mExists.get()) {
-                if(mPlaying.isNotePlaying(mOffset + mScrollPosition.get())) {
+                if(mPlaying.get()) {
                     padLight.state().setValue(PadLightState.solidLight(78));
                 } else {
                     padLight.setColor(mColor.get());
@@ -85,7 +81,6 @@ public class DrumPadMode extends AbstractMode {
                 session.sendSysex("0f 00");
             }
         });
-        LaunchpadXPad[] arrows = new LaunchpadXPad[]{surface.up(), surface.down(), surface.left(), surface.right()};
         int[] arrowOffsets = new int[]{16, -16, -4, 4};
         DrumPadBank mDrumBank = device.createDrumPadBank(64);
         SettableIntegerValue mScrollPosition = mDrumBank.scrollPosition();
@@ -110,24 +105,44 @@ public class DrumPadMode extends AbstractMode {
             DrumPad dpad = mDrumBank.getItemAt(i);
             BooleanValue hasContent = dpad.exists();
             hasContent.markInterested();
+            AtomicBoolean playing = new AtomicBoolean(false);
 
-            drumPadLights[i] = new DrumPadLight(surface, dpad, i, mDrumBank.scrollPosition());
+            drumPadLights[i] = new DrumPadLight(surface, dpad, playing);
 
             NoteInput noteOut = session.noteInput();
             int finalI = i;
+            dpad.playingNotes().addValueObserver((pns) -> {
+                playing.set(Arrays.stream(pns).anyMatch((pn) -> pn.pitch() == finalI + mScrollPosition.get()));
+                redraw(surface);
+            });
             mPlayNote[i] = host.createAction(val -> {
                 if(hasContent.get()) {
                     noteOut.sendRawMidiEvent(0x90 | (0xF & mChannel.get()), scrollPos.get() + finalI, (int)Math.round(val * 127));
+                    playing.set(true);
+                    redraw(surface);
                 }
             }, () -> "Play Drum Pad " + finalI);
-            mReleaseNote[i] = host.createAction(() -> noteOut.sendRawMidiEvent(0x80 | (0xF & mChannel.get()), scrollPos.get() + finalI, 0), () -> "Release Drum Pad " + finalI);
+            mReleaseNote[i] = host.createAction(() -> {
+                noteOut.sendRawMidiEvent(0x80 | (0xF & mChannel.get()), scrollPos.get() + finalI, 0);
+                playing.set(false);
+                redraw(surface);
+            }, () -> "Release Drum Pad " + finalI);
             mAftertouchNote[i] = host.createAbsoluteHardwareControlAdjustmentTarget(val -> {
                 if(hasContent.get()) {
                     noteOut.sendRawMidiEvent(0xA0 | (0xF & mChannel.get()), scrollPos.get() + finalI, (int)Math.round(val * 127));
                 }
             });
         }
-        session.sendSysex("16");
+
+        long channelQueryDelay = 300L;
+
+        host.scheduleTask(new Runnable() {
+            @Override
+            public void run() {
+                session.sendSysex("16");
+                host.scheduleTask(this, channelQueryDelay);
+            }
+        }, 1);
     }
 
     @Override
@@ -172,7 +187,6 @@ public class DrumPadMode extends AbstractMode {
         if (sysex[0] == 0x16) {
             mChannel.set(sysex[4]);
         }
-        responses.add("16");
         return responses;
     }
 }
