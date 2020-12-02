@@ -9,6 +9,7 @@ import io.github.jengamon.novation.surface.NoteButton;
 import io.github.jengamon.novation.surface.state.PadLightState;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,7 +81,6 @@ public class DrumPadMode extends AbstractMode {
                 session.sendSysex("0f 00");
             }
         });
-        LaunchpadXPad[] arrows = new LaunchpadXPad[]{surface.up(), surface.down(), surface.left(), surface.right()};
         int[] arrowOffsets = new int[]{16, -16, -4, 4};
         DrumPadBank mDrumBank = device.createDrumPadBank(64);
         SettableIntegerValue mScrollPosition = mDrumBank.scrollPosition();
@@ -111,6 +111,10 @@ public class DrumPadMode extends AbstractMode {
 
             NoteInput noteOut = session.noteInput();
             int finalI = i;
+            dpad.playingNotes().addValueObserver((pns) -> {
+                playing.set(Arrays.stream(pns).anyMatch((pn) -> pn.pitch() == finalI + mScrollPosition.get()));
+                redraw(surface);
+            });
             mPlayNote[i] = host.createAction(val -> {
                 if(hasContent.get()) {
                     noteOut.sendRawMidiEvent(0x90 | (0xF & mChannel.get()), scrollPos.get() + finalI, (int)Math.round(val * 127));
