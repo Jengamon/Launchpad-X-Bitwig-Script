@@ -2,7 +2,7 @@ package io.github.jengamon.novation.modes.mixer;
 
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.Mode;
-import io.github.jengamon.novation.modes.session.FaderModeArrowPadLight;
+import io.github.jengamon.novation.modes.session.ArrowPadLight;
 import io.github.jengamon.novation.modes.session.TrackColorFaderLight;
 import io.github.jengamon.novation.surface.Fader;
 import io.github.jengamon.novation.surface.LaunchpadXPad;
@@ -15,15 +15,15 @@ public class VolumeMixer extends AbstractFaderMixerMode {
     private TrackColorFaderLight[] faderLights = new TrackColorFaderLight[8];
     private Parameter[] volumes = new Parameter[8];
 
-    private FaderModeArrowPadLight trackForwardLight;
-    private FaderModeArrowPadLight trackBackwardLight;
+    private ArrowPadLight trackForwardLight;
+    private ArrowPadLight trackBackwardLight;
     private HardwareActionBindable trackForwardAction;
     private HardwareActionBindable trackBackwardAction;
 
 
     public VolumeMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                        LaunchpadXSurface surface, TrackBank bank) {
-        super(mixerMode, host, transport, surface, Mode.MIXER_VOLUME);
+        super(mixerMode, host, transport, surface, Mode.MIXER_VOLUME, 64);
 
         for(int i = 0; i < 8; i++) {
             Track track = bank.getItemAt(i);
@@ -32,8 +32,8 @@ public class VolumeMixer extends AbstractFaderMixerMode {
             volumes[i] = track.volume();
         }
 
-        trackForwardLight = new FaderModeArrowPadLight(surface, bank.canScrollForwards(), this::redraw);
-        trackBackwardLight = new FaderModeArrowPadLight(surface, bank.canScrollBackwards(), this::redraw);
+        trackForwardLight = new ArrowPadLight(surface, bank.canScrollForwards(), mModeColor, this::redraw);
+        trackBackwardLight = new ArrowPadLight(surface, bank.canScrollBackwards(), mModeColor, this::redraw);
         trackForwardAction = bank.scrollForwardsAction();
         trackBackwardAction = bank.scrollBackwardsAction();
     }
@@ -45,7 +45,7 @@ public class VolumeMixer extends AbstractFaderMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 0, 64);
+        drawMixerModeIndicator(surface, 0);
 
         Fader[] faders = surface.faders();
         for(int i = 0; i < faders.length; i++) {

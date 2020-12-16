@@ -40,7 +40,7 @@ public class SoloMixer extends AbstractSessionMixerMode {
 
     public SoloMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                      LaunchpadXSurface surface, TrackBank bank) {
-        super(mixerMode, host, transport, surface, bank, Mode.MIXER_SOLO);
+        super(mixerMode, host, transport, surface, bank, Mode.MIXER_SOLO, 124);
 
         for(int i = 0; i < 8; i++) {
             Track track = bank.getItemAt(i);
@@ -53,7 +53,7 @@ public class SoloMixer extends AbstractSessionMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 6, 124);
+        drawMixerModeIndicator(surface, 6);
 
         NoteButton[] finalRow = getFinalRow(surface);
         for(int i = 0; i < finalRow.length; i++) {

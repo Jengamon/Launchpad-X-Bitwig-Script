@@ -19,8 +19,8 @@ public abstract class AbstractSessionMixerMode extends AbstractMixerMode {
     private HardwareBindable[] arrowActions;
 
     public AbstractSessionMixerMode(AtomicReference<Mode> mixerMode, ControllerHost host,
-                                    Transport transport, LaunchpadXSurface surface, TrackBank bank, Mode targetMode) {
-        super(mixerMode, host, transport, surface, targetMode);
+                                    Transport transport, LaunchpadXSurface surface, TrackBank bank, Mode targetMode, int modeColor) {
+        super(mixerMode, host, transport, surface, targetMode, modeColor);
 
         // Setup pad lights and buttons
         /*
@@ -63,7 +63,7 @@ public abstract class AbstractSessionMixerMode extends AbstractMixerMode {
 
         LaunchpadXPad[] arrows = surface.arrows();
         for(int i = 0; i < arrows.length; i++) {
-            arrowLights[i] = new ArrowPadLight(surface, arrowEnabled[i], this::redraw);
+            arrowLights[i] = new ArrowPadLight(surface, arrowEnabled[i], mModeColor, this::redraw);
         }
     }
 

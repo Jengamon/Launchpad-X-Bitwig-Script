@@ -28,14 +28,16 @@ public abstract class AbstractMixerMode extends AbstractMode {
             Mode.MIXER_ARM
     };
     private HardwareActionBindable[] sceneActions = new HardwareActionBindable[8];
+    protected int mModeColor;
 
     public AbstractMixerMode(AtomicReference<Mode> mixerMode, ControllerHost host,
-                             Transport transport, LaunchpadXSurface lSurf, Mode targetMode) {
+                             Transport transport, LaunchpadXSurface lSurf, Mode targetMode, int modeColor) {
         mBPM = transport.tempo().modulatedValue();
         mMixerMode = mixerMode;
         mTargetMode = targetMode;
 
         mBPM.markInterested();
+        mModeColor = modeColor;
 
         for(int i = 0; i < 8; i++) {
             final int j = i;
@@ -43,11 +45,11 @@ public abstract class AbstractMixerMode extends AbstractMode {
         }
     }
 
-    public void drawMixerModeIndicator(LaunchpadXSurface surface, int padIndex, int color) {
+    public void drawMixerModeIndicator(LaunchpadXSurface surface, int padIndex) {
         for(int i = 0; i < 8; i++) {
             LaunchpadXPad scene = surface.scenes()[i];
             if(i == padIndex) {
-                scene.light().state().setValue(PadLightState.pulseLight(mBPM.getRaw(), color));
+                scene.light().state().setValue(PadLightState.pulseLight(mBPM.getRaw(), mModeColor));
             } else {
                 scene.light().state().setValue(PadLightState.solidLight(1));
             }

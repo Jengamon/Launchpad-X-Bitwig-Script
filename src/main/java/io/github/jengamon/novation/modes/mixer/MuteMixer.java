@@ -40,7 +40,7 @@ public class MuteMixer extends AbstractSessionMixerMode {
 
     public MuteMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                      LaunchpadXSurface surface, TrackBank bank) {
-        super(mixerMode, host, transport, surface, bank, Mode.MIXER_MUTE);
+        super(mixerMode, host, transport, surface, bank, Mode.MIXER_MUTE, 9);
 
         for(int i = 0; i < 8; i++) {
             Track track = bank.getItemAt(i);
@@ -53,7 +53,7 @@ public class MuteMixer extends AbstractSessionMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 5, 9);
+        drawMixerModeIndicator(surface, 5);
 
         NoteButton[] finalRow = getFinalRow(surface);
         for(int i = 0; i < finalRow.length; i++) {

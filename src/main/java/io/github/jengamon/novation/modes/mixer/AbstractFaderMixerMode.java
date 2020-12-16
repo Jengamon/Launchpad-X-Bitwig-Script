@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class AbstractFaderMixerMode extends AbstractMixerMode {
 
     public AbstractFaderMixerMode(AtomicReference<Mode> mixerMode, ControllerHost host,
-                                  Transport transport, LaunchpadXSurface lSurf, Mode targetMode) {
-        super(mixerMode, host, transport, lSurf, targetMode);
+                                  Transport transport, LaunchpadXSurface lSurf, Mode targetMode, int modeColor) {
+        super(mixerMode, host, transport, lSurf, targetMode, modeColor);
     }
 
     @Override
