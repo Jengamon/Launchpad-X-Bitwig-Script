@@ -20,6 +20,7 @@ public class DrumPadMode extends AbstractMode {
     private HardwareActionBindable[] mPlayNote;
     private HardwareActionBindable[] mReleaseNote;
     private AbsoluteHardwarControlBindable[] mAftertouchNote;
+    private AbsoluteHardwarControlBindable mChannelPressure;
     private ArrowPadLight[] mArrowLights = new ArrowPadLight[4];
     private HardwareActionBindable[] mArrowActions = new HardwareActionBindable[4];
 
@@ -101,6 +102,9 @@ public class DrumPadMode extends AbstractMode {
         mPlayNote = new HardwareActionBindable[64];
         mReleaseNote = new HardwareActionBindable[64];
         mAftertouchNote = new AbsoluteHardwarControlBindable[64];
+
+        NoteInput noteOut = session.noteInput();
+
         for(int i = 0; i < 64; i++) {
             DrumPad dpad = mDrumBank.getItemAt(i);
             BooleanValue hasContent = dpad.exists();
@@ -109,7 +113,6 @@ public class DrumPadMode extends AbstractMode {
 
             drumPadLights[i] = new DrumPadLight(surface, dpad, playing);
 
-            NoteInput noteOut = session.noteInput();
             int finalI = i;
             dpad.playingNotes().addValueObserver((pns) -> {
                 playing.set(Arrays.stream(pns).anyMatch((pn) -> pn.pitch() == finalI + mScrollPosition.get()));
@@ -133,6 +136,10 @@ public class DrumPadMode extends AbstractMode {
                 }
             });
         }
+
+        mChannelPressure = host.createAbsoluteHardwareControlAdjustmentTarget(val -> {
+            noteOut.sendRawMidiEvent(0xD0 | (0xF & mChannel.get()), (int)Math.round(val * 127), 0);
+        });
 
         long channelQueryDelay = 300L;
 
@@ -177,6 +184,8 @@ public class DrumPadMode extends AbstractMode {
             LaunchpadXPad pad = arrows[i];
             bindings.add(pad.button().pressedAction().addBinding(mArrowActions[i]));
         }
+
+        bindings.add(surface.channelPressure().addBindingWithRange(mChannelPressure, 0.0, 1.0));
 
         return bindings;
     }

@@ -57,21 +57,16 @@ public class NoteButton extends LaunchpadXPad {
 
         HardwareActionMatcher onRelease = in.createActionMatcher("status == 0x90 && data2 == 0 && data1 == " + note);
         AbsoluteHardwareValueMatcher onAfterRelease = in.createAbsoluteValueMatcher(aftExpr + " && data2 == 0", "data2", 8);
-        AbsoluteHardwareValueMatcher onChannelPressure = in.createAbsoluteValueMatcher("status == 0xD0", "data1", 7);
         AbsoluteHardwareValueMatcher onVelocity = in.createNoteOnVelocityValueMatcher(0, note);
         AbsoluteHardwareValueMatcher onAftertouch = in.createPolyAftertouchValueMatcher(0, note);
         HardwareActionMatcher onDrumRelease = in.createActionMatcher("status == 0x98 && data1 == " + dpnote + " && data2 == 0");
         AbsoluteHardwareValueMatcher onDrumPolyAfterOff = in.createAbsoluteValueMatcher( drumAftExpr + " && data2 == 0", "data2", 8);
         AbsoluteHardwareValueMatcher onDrumVelocity = in.createNoteOnVelocityValueMatcher(8, dpnote);
         AbsoluteHardwareValueMatcher onDrumAftertouch = in.createPolyAftertouchValueMatcher(8, dpnote);
-        AbsoluteHardwareValueMatcher onDrumChannelPressure = in.createAbsoluteValueMatcher("status == 0xD8", "data1", 7);
 
         mButton.setAftertouchControl(mAftertouch);
         mAftertouch.setAdjustValueMatcher(
-                host.createOrAbsoluteHardwareValueMatcher(
-                        host.createOrAbsoluteHardwareValueMatcher(onAftertouch, onChannelPressure),
-                        host.createOrAbsoluteHardwareValueMatcher(onDrumAftertouch, onDrumChannelPressure)
-                )
+                host.createOrAbsoluteHardwareValueMatcher(onAftertouch, onDrumAftertouch)
         );
         mButton.pressedAction().setPressureActionMatcher(
                 host.createOrAbsoluteHardwareValueMatcher(onVelocity, onDrumVelocity)
