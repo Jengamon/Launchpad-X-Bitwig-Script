@@ -45,7 +45,7 @@ public class ControlsMixer extends AbstractFaderMixerMode {
 
     public ControlsMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                          LaunchpadXSurface surface, CursorDevice device) {
-        super(mixerMode, host, transport, surface, Mode.MIXER_CONTROLS);
+        super(mixerMode, host, transport, surface, Mode.MIXER_CONTROLS, 68);
 
         CursorRemoteControlsPage controlPage = device.createCursorRemoteControlsPage(8);
 
@@ -62,7 +62,7 @@ public class ControlsMixer extends AbstractFaderMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 3, 68);
+        drawMixerModeIndicator(surface, 3);
 
         Fader[] faders = surface.faders();
         for(int i = 0; i < 8; i++) {

@@ -2,7 +2,7 @@ package io.github.jengamon.novation.modes.mixer;
 
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.Mode;
-import io.github.jengamon.novation.modes.session.FaderModeArrowPadLight;
+import io.github.jengamon.novation.modes.session.ArrowPadLight;
 import io.github.jengamon.novation.modes.session.TrackColorFaderLight;
 import io.github.jengamon.novation.surface.Fader;
 import io.github.jengamon.novation.surface.LaunchpadXPad;
@@ -15,14 +15,14 @@ public class SendMixer extends AbstractFaderMixerMode {
     private TrackColorFaderLight[] faderLights = new TrackColorFaderLight[8];
     private Parameter[] sends = new Parameter[8];
 
-    private FaderModeArrowPadLight trackForwardLight;
-    private FaderModeArrowPadLight trackBackwardLight;
+    private ArrowPadLight trackForwardLight;
+    private ArrowPadLight trackBackwardLight;
     private HardwareActionBindable trackForwardAction;
     private HardwareActionBindable trackBackwardAction;
 
     public SendMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                      LaunchpadXSurface surface, CursorTrack track) {
-        super(mixerMode, host, transport, surface, Mode.MIXER_SEND);
+        super(mixerMode, host, transport, surface, Mode.MIXER_SEND, 82);
 
         SendBank bank = track.sendBank();
 
@@ -32,8 +32,8 @@ public class SendMixer extends AbstractFaderMixerMode {
             sends[i] = send;
         }
 
-        trackForwardLight = new FaderModeArrowPadLight(surface, bank.canScrollForwards(), this::redraw);
-        trackBackwardLight = new FaderModeArrowPadLight(surface, bank.canScrollBackwards(), this::redraw);
+        trackForwardLight = new ArrowPadLight(surface, bank.canScrollForwards(), mModeColor, this::redraw);
+        trackBackwardLight = new ArrowPadLight(surface, bank.canScrollBackwards(), mModeColor, this::redraw);
         trackForwardAction = bank.scrollForwardsAction();
         trackBackwardAction = bank.scrollBackwardsAction();
     }
@@ -45,7 +45,7 @@ public class SendMixer extends AbstractFaderMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 2, 82);
+        drawMixerModeIndicator(surface, 2);
 
         Fader[] faders = surface.faders();
         for(int i = 0; i < faders.length; i++) {

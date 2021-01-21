@@ -48,7 +48,7 @@ public class RecordArmMixer extends AbstractSessionMixerMode {
 
     public RecordArmMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                           LaunchpadXSurface surface, TrackBank bank) {
-        super(mixerMode, host, transport, surface, bank, Mode.MIXER_ARM);
+        super(mixerMode, host, transport, surface, bank, Mode.MIXER_ARM, 120);
 
         for(int i = 0; i < 8; i++) {
             Track track = bank.getItemAt(i);
@@ -62,7 +62,7 @@ public class RecordArmMixer extends AbstractSessionMixerMode {
     public void onDraw(LaunchpadXSurface surface) {
         super.onDraw(surface);
 
-        drawMixerModeIndicator(surface, 7, 120);
+        drawMixerModeIndicator(surface, 7);
 
         NoteButton[] finalRow = getFinalRow(surface);
         for(int i = 0; i < finalRow.length; i++) {

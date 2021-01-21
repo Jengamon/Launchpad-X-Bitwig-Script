@@ -51,17 +51,20 @@ public class DrumPadMode extends AbstractMode {
         private ColorValue mColor;
         private AtomicBoolean mPlaying;
         private BooleanValue mExists;
+        private BooleanValue mEnabled;
         public DrumPadLight(LaunchpadXSurface surface, DrumPad drumPad, AtomicBoolean playing) {
             mColor = drumPad.color();
             mPlaying = playing;
             mExists = drumPad.exists();
+            mEnabled = drumPad.isActivated();
 
             mColor.addValueObserver((r, g, b) -> redraw(surface));
             mExists.addValueObserver(e -> redraw(surface));
+            mEnabled.addValueObserver(e -> redraw(surface));
         }
 
         public void draw(MultiStateHardwareLight padLight) {
-            if(mExists.get()) {
+            if(mExists.get() && mEnabled.get()) {
                 if(mPlaying.get()) {
                     padLight.state().setValue(PadLightState.solidLight(78));
                 } else {
@@ -109,6 +112,8 @@ public class DrumPadMode extends AbstractMode {
             DrumPad dpad = mDrumBank.getItemAt(i);
             BooleanValue hasContent = dpad.exists();
             hasContent.markInterested();
+            BooleanValue notDeactivated = dpad.isActivated();
+            notDeactivated.markInterested();
             AtomicBoolean playing = new AtomicBoolean(false);
 
             drumPadLights[i] = new DrumPadLight(surface, dpad, playing);
@@ -119,7 +124,7 @@ public class DrumPadMode extends AbstractMode {
                 redraw(surface);
             });
             mPlayNote[i] = host.createAction(val -> {
-                if(hasContent.get()) {
+                if(hasContent.get() && notDeactivated.get()) {
                     noteOut.sendRawMidiEvent(0x90 | (0xF & mChannel.get()), scrollPos.get() + finalI, (int)Math.round(val * 127));
                     playing.set(true);
                     redraw(surface);
@@ -131,7 +136,7 @@ public class DrumPadMode extends AbstractMode {
                 redraw(surface);
             }, () -> "Release Drum Pad " + finalI);
             mAftertouchNote[i] = host.createAbsoluteHardwareControlAdjustmentTarget(val -> {
-                if(hasContent.get()) {
+                if(hasContent.get() && notDeactivated.get()) {
                     noteOut.sendRawMidiEvent(0xA0 | (0xF & mChannel.get()), scrollPos.get() + finalI, (int)Math.round(val * 127));
                 }
             });
