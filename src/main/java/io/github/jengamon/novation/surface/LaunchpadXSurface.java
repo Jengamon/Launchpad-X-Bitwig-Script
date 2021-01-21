@@ -1,8 +1,8 @@
 package io.github.jengamon.novation.surface;
 
-import com.bitwig.extension.controller.api.ControllerHost;
-import com.bitwig.extension.controller.api.HardwareSurface;
+import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.Utils;
+import io.github.jengamon.novation.internal.ChannelType;
 import io.github.jengamon.novation.internal.Session;
 
 import java.util.Arrays;
@@ -17,6 +17,7 @@ public class LaunchpadXSurface {
     private CCButton mCustomButton;
     private CCButton mRecordButton;
     private CCButton mNovationButton;
+    private AbsoluteHardwareControl mChannelPressure;
     private Session mSession;
     private HardwareSurface mSurface;
 
@@ -44,6 +45,7 @@ public class LaunchpadXSurface {
 
     public LaunchpadXPad[] scenes() { return mSceneButtons; }
     public NoteButton[][] notes() { return mNoteButtons; }
+    public AbsoluteHardwareControl channelPressure() { return mChannelPressure; }
 
     public Fader[] faders() { return mFaders; }
 
@@ -58,8 +60,15 @@ public class LaunchpadXSurface {
         mRecordButton = new CCButton(session, surface, "Record", 98, 13 + 23*7, 13);
         mNovationButton = new CCButton(session, surface, "N", 99, 13 + 23 * 8, 13);
         mSceneButtons = new CCButton[8];
+
+        mChannelPressure = surface.createAbsoluteHardwareKnob("Pressure");
+        MidiIn in = session.midiIn(ChannelType.DAW);
+        AbsoluteHardwareValueMatcher onDrumChannelPressure = in.createAbsoluteValueMatcher("status == 0xD8", "data1", 7);
+        mChannelPressure.setAdjustValueMatcher(onDrumChannelPressure);
+
         mSession = session;
         mSurface = surface;
+
         for(int i = 0; i < 8; i++) {
             mSceneButtons[i] = new CCButton(session, surface, "S" + (i+1), (8 - i) * 10 + 9, 13 + 23 * 8, 13 + 23 * (1 + i));
         }
