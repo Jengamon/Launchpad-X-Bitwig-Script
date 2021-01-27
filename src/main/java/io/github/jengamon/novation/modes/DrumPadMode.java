@@ -142,11 +142,11 @@ public class DrumPadMode extends AbstractMode {
             });
         }
 
-        mChannelPressure = host.createAbsoluteHardwareControlAdjustmentTarget(val -> {
-            noteOut.sendRawMidiEvent(0xD0 | (0xF & mChannel.get()), (int)Math.round(val * 127), 0);
-        });
+        mChannelPressure = host.createAbsoluteHardwareControlAdjustmentTarget(val ->
+                noteOut.sendRawMidiEvent(0xD0 | (0xF & mChannel.get()), (int)Math.round(val * 127), 0)
+        );
 
-        long channelQueryDelay = 300L;
+        long channelQueryDelay = 32L;
 
         host.scheduleTask(new Runnable() {
             @Override
