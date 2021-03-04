@@ -58,6 +58,7 @@ public class LaunchpadXExtension extends ControllerExtension
       Transport mTransport = host.createTransport();
       CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
       CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
+      CursorDevice mControlsCursorDevice = mCursorTrack.createCursorDevice("Primary IoE", "Primary Device", 0, CursorDeviceFollowMode.FOLLOW_SELECTION);
       TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
       mSessionTrackBank.setSkipDisabledItems(true);
 
@@ -86,7 +87,7 @@ public class LaunchpadXExtension extends ControllerExtension
       mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
       mMachine.register(Mode.MIXER_PAN, new PanMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
       mMachine.register(Mode.MIXER_SEND, new SendMixer(mixerMode, host, mTransport, mLSurface, mCursorTrack));
-      mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mCursorDevice));
+      mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mControlsCursorDevice));
       mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
       mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
       mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
