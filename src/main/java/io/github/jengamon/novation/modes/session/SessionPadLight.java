@@ -16,7 +16,7 @@ public class SessionPadLight {
     private BooleanValue mHasContent;
     private ColorValue mColor;
 
-    private AtomicInteger mSlotIndex = new AtomicInteger(-1);
+    private int mSlotIndex = -1;
 
     private static class SlotState {
         public AtomicInteger mStateIndex;
@@ -39,12 +39,13 @@ public class SessionPadLight {
         QUEUE_RECORD
     }
 
-    public SessionPadLight(LaunchpadXSurface surface, ClipLauncherSlot slot, Track track, RangedValue bpm, Consumer<LaunchpadXSurface> redraw) {
+    public SessionPadLight(LaunchpadXSurface surface, ClipLauncherSlot slot, Track track, RangedValue bpm, Consumer<LaunchpadXSurface> redraw, int index) {
         mBPM = bpm;
         mArmed = track.arm();
         mHasContent = slot.hasContent();
         mColor = slot.color();
         mExists = slot.exists();
+        mSlotIndex = index;
 
         // Also refresh whenever a slot's *existence* value changes ig...
         mHasContent.addValueObserver(ae -> redraw.accept(surface));
@@ -57,7 +58,7 @@ public class SessionPadLight {
             mSlotStates[i] = new SlotState();
         }
 
-        slot.sceneIndex().addValueObserver(si -> {mSlotIndex.set(si); redraw.accept(surface);});
+        slot.sceneIndex().addValueObserver(si -> redraw.accept(surface));
         track.clipLauncherSlotBank().addPlaybackStateObserver((slotIndex, state, isQueued) -> {
             SlotState slotState = mSlotStates[slotIndex];
             slotState.mStateIndex.set(state);
@@ -73,20 +74,16 @@ public class SessionPadLight {
      * @return the current state the button should be in.
      */
     private State getState() {
-        if(mSlotIndex.get() >= 0) {
-            int state = mSlotStates[mSlotIndex.get()].mStateIndex.get();
-            boolean isQueued = mSlotStates[mSlotIndex.get()].mIsQueued.get();
-            if (state == 0) {
-                return (isQueued ? State.QUEUE_STOP : State.STOPPED);
-            } else if (state == 1) {
-                return (isQueued ? State.QUEUE_PLAY : State.PLAYING);
-            } else if (state == 2) {
-                return (isQueued ? State.QUEUE_RECORD : State.RECORDING);
-            } else {
-                throw new RuntimeException("Invalid state " + state);
-            }
+        int state = mSlotStates[mSlotIndex].mStateIndex.get();
+        boolean isQueued = mSlotStates[mSlotIndex].mIsQueued.get();
+        if (state == 0) {
+            return (isQueued ? State.QUEUE_STOP : State.STOPPED);
+        } else if (state == 1) {
+            return (isQueued ? State.QUEUE_PLAY : State.PLAYING);
+        } else if (state == 2) {
+            return (isQueued ? State.QUEUE_RECORD : State.RECORDING);
         } else {
-            return State.STOPPED;
+            throw new RuntimeException("Invalid state " + state);
         }
     }
 

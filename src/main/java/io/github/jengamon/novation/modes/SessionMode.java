@@ -85,7 +85,7 @@ public class SessionMode extends AbstractMode {
                 ClipLauncherSlotBank slotBank = track.clipLauncherSlotBank();
                 ClipLauncherSlot slot = slotBank.getItemAt(scene);
 
-                padLights[scene][trk] = new SessionPadLight(surface, slot, track, bpm, this::redraw);
+                padLights[scene][trk] = new SessionPadLight(surface, slot, track, bpm, this::redraw, trk);
                 padActions[scene][trk] = slot.launchAction();
             }
         }
