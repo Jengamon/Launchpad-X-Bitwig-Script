@@ -57,7 +57,7 @@ public class SessionPadLight {
         for(int i = 0; i < 8; i++) {
             mSlotStates[i] = new SlotState();
         }
-
+        
         slot.sceneIndex().addValueObserver(si -> redraw.accept(surface));
         track.clipLauncherSlotBank().addPlaybackStateObserver((slotIndex, state, isQueued) -> {
             SlotState slotState = mSlotStates[slotIndex];

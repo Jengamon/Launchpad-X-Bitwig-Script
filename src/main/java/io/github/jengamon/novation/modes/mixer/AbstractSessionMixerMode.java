@@ -42,7 +42,7 @@ public abstract class AbstractSessionMixerMode extends AbstractMixerMode {
                 ClipLauncherSlotBank slotBank = track.clipLauncherSlotBank();
                 ClipLauncherSlot slot = slotBank.getItemAt(scene);
 
-                padLights[scene][trk] = new SessionPadLight(surface, slot, track, mBPM, this::redraw, trk);
+                padLights[scene][trk] = new SessionPadLight(surface, slot, track, mBPM, this::redraw, scene);
                 padActions[scene][trk] = slot.launchAction();
             }
         }
