@@ -54,7 +54,7 @@ public class PadLightState extends InternalHardwareLightState {
 
     @Override
     public boolean equals(Object o) {
-        if(o.getClass() == PadLightState.class) {
+        if(o != null && o.getClass() == PadLightState.class) {
             PadLightState other = (PadLightState)o;
             return mSolid == other.mSolid && mPulse == other.mPulse && mBlink == other.mBlink && mBPM == other.mBPM;
         } else {

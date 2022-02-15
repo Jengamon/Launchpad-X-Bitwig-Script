@@ -21,7 +21,7 @@ public class FaderLightState extends InternalHardwareLightState {
 
     @Override
     public boolean equals(Object o) {
-        if(o.getClass() == FaderLightState.class) {
+        if(o != null && o.getClass() == FaderLightState.class) {
             FaderLightState other = (FaderLightState)o;
             return mSolid == other.mSolid;
         } else {
