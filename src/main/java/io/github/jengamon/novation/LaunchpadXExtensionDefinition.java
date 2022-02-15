@@ -79,6 +79,7 @@ public class LaunchpadXExtensionDefinition extends ControllerExtensionDefinition
       else if (platformType == PlatformType.MAC)
       {
          // TODO: Find a good guess for the Mac names.
+         list.add(new String[]{"Launchpad X LPX DAW Out", "Launchpad X LPX MIDI Out"}, new String[]{"Launchpad X LPX DAW In", "Launchpad X LPX MIDI In"});
       }
       else if (platformType == PlatformType.LINUX)
       {
