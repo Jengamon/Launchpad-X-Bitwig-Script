@@ -18,9 +18,9 @@ jobs:
       - name: Build with Maven
         run: mvn -B install --file pom.xml
       - name: Upload asset to release
-        uses: actions-github/upload-to-release@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: Shopify/upload-to-release@v2
         with:
-          file: './target/LaunchpadX.bwextension'
-          type: 'application/java-archive'
+          name: 'Launchpad X Extension'
+          path: './target/LaunchpadX.bwextension'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          content-type: 'application/java-archive'
