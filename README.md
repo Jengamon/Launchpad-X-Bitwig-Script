@@ -17,7 +17,7 @@ to this framework, but we'll see.
 
 ## TODO
 
-- Nothing for now
+- Fix release CI so that the bwextension is uploaded again
 
 ## Installation
 
