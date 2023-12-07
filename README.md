@@ -1,6 +1,6 @@
 # Jengamon's Launchpad X for Bitwig
 
-![Java CI build status](https://github.com/Jengamon/Launchpad-X-Bitwig-Script/workflows/Java%20CI/badge.svg?branch=api-10)
+![Build status badge](https://github.com/Jengamon/Launchpad-X-Bitwig-Script/workflows/Java%20CI/badge.svg)
 
 ## Why not DrivenByMoss?
 
