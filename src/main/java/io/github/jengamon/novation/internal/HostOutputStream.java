@@ -2,7 +2,6 @@ package io.github.jengamon.novation.internal;
 
 import com.bitwig.extension.controller.api.ControllerHost;
 
-import java.io.IOException;
 import java.io.OutputStream;
 
 /**
