@@ -14,18 +14,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SessionMode extends AbstractMode {
-    private SessionSceneLight[] sceneLights = new SessionSceneLight[8];
-    private HardwareActionBindable[] sceneLaunchActions = new HardwareActionBindable[8];
-    private SessionPadLight[][] padLights = new SessionPadLight[8][8];
-    private HardwareActionBindable[][] padActions = new HardwareActionBindable[8][8];
-    private ArrowPadLight[] arrowLights = new ArrowPadLight[4];
-    private HardwareBindable[] arrowActions;
+    private final SessionSceneLight[] sceneLights = new SessionSceneLight[8];
+    private final HardwareActionBindable[] sceneLaunchActions = new HardwareActionBindable[8];
+    private final SessionPadLight[][] padLights = new SessionPadLight[8][8];
+    private final HardwareActionBindable[][] padActions = new HardwareActionBindable[8][8];
+    private final ArrowPadLight[] arrowLights = new ArrowPadLight[4];
+    private final HardwareBindable[] arrowActions;
 
     private class SessionSceneLight {
-        private RangedValue mBPM;
-        private BooleanValue mPulseSessionPads;
-        private ColorValue mSceneColor;
-        private BooleanValue mSceneExists;
+        private final RangedValue mBPM;
+        private final BooleanValue mPulseSessionPads;
+        private final ColorValue mSceneColor;
+        private final BooleanValue mSceneExists;
         public SessionSceneLight(LaunchpadXSurface surface, Scene scene, BooleanValue pulseSessionPads, RangedValue bpm) {
             mBPM = bpm;
             mPulseSessionPads = pulseSessionPads;
@@ -51,7 +51,7 @@ public class SessionMode extends AbstractMode {
     }
 
     public SessionMode(TrackBank bank, Transport transport, LaunchpadXSurface surface, ControllerHost host, BooleanValue pulseSessionPads) {
-        int[] ids = new int[]{89, 79, 69, 59, 49, 39, 29, 19};
+//        int[] ids = new int[]{89, 79, 69, 59, 49, 39, 29, 19};
         RangedValue bpm = transport.tempo().modulatedValue();
 
         // Set up scene buttons

@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ModeMachine {
-    private Map<Mode, AbstractMode> mModes;
+    private final Map<Mode, AbstractMode> mModes;
     private Mode mMode;
     private AbstractMode mModus;
     private List<HardwareBinding> mBindings;
-    private Session mSession;
+    private final Session mSession;
 
     public ModeMachine(Session session) {
         mModes = new HashMap<>();

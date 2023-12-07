@@ -13,10 +13,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractSessionMixerMode extends AbstractMixerMode {
-    private SessionPadLight[][] padLights = new SessionPadLight[7][8];
-    private HardwareActionBindable[][] padActions = new HardwareActionBindable[7][8];
-    private ArrowPadLight[] arrowLights = new ArrowPadLight[4];
-    private HardwareBindable[] arrowActions;
+    private final SessionPadLight[][] padLights = new SessionPadLight[7][8];
+    private final HardwareActionBindable[][] padActions = new HardwareActionBindable[7][8];
+    private final ArrowPadLight[] arrowLights = new ArrowPadLight[4];
+    private final HardwareBindable[] arrowActions;
 
     public AbstractSessionMixerMode(AtomicReference<Mode> mixerMode, ControllerHost host,
                                     Transport transport, LaunchpadXSurface surface, TrackBank bank, Mode targetMode, int modeColor) {

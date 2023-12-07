@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class SessionPadLight {
-    private RangedValue mBPM;
-    private BooleanValue mArmed;
-    private BooleanValue mExists;
-    private BooleanValue mHasContent;
-    private ColorValue mColor;
+    private final RangedValue mBPM;
+    private final BooleanValue mArmed;
+    private final BooleanValue mExists;
+    private final BooleanValue mHasContent;
+    private final ColorValue mColor;
 
-    private int mSlotIndex = -1;
+    private final int mSlotIndex;
 
     private static class SlotState {
         public AtomicInteger mStateIndex;
@@ -28,7 +28,7 @@ public class SessionPadLight {
         }
     }
 
-    private SlotState[] mSlotStates = new SlotState[8];
+    private final SlotState[] mSlotStates = new SlotState[8];
 
     private enum State {
         STOPPED,
@@ -68,8 +68,7 @@ public class SessionPadLight {
     }
 
     /**
-     * Because Bitwig basically fucks us over with non-descriptive/buggy APIs, we have to do this.
-     *
+     * Because Bitwig basically fucks us over with non-descriptive/buggy APIs, we have to do this. (???)
      * Calculates the state of a button, given the last updated state and isQueued values of *all* slots.
      * @return the current state the button should be in.
      */

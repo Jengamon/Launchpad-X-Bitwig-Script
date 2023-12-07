@@ -9,8 +9,5 @@
         <module name="launchpad-x" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="launchpad-x" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
 </project>

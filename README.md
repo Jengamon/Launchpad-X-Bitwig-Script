@@ -1,6 +1,6 @@
-# Jengamon's Launchpad X for Bitwig 
+# Jengamon's Launchpad X for Bitwig
 
-![Java CI](https://github.com/Jengamon/Launchpad-X-Bitwig-Script/workflows/Java%20CI/badge.svg?branch=api-10)
+![Java CI build status](https://github.com/Jengamon/Launchpad-X-Bitwig-Script/workflows/Java%20CI/badge.svg?branch=api-10)
 
 ## Why not DrivenByMoss?
 
@@ -17,15 +17,7 @@ to this framework, but we'll see.
 
 ## TODO
 
-- Add Mac and Linux autodetection (maybes take this from DrivenByMoss?)
-
-## API 10 Version
-
-It seems that the JS API for Bitwig just has some limitiations that I can't jive
-with, so I made the switch to the Java API.
-
-It's actually going pretty well. The script is partially working now, and it's an
-exciting time again.
+- Nothing for now
 
 ## Installation
 

@@ -15,19 +15,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DrumPadMode extends AbstractMode {
-    private AtomicInteger mChannel = new AtomicInteger(0);
-    private DrumPadLight[] drumPadLights = new DrumPadLight[64];
-    private HardwareActionBindable[] mPlayNote;
-    private HardwareActionBindable[] mReleaseNote;
-    private AbsoluteHardwarControlBindable[] mAftertouchNote;
-    private AbsoluteHardwarControlBindable mChannelPressure;
-    private ArrowPadLight[] mArrowLights = new ArrowPadLight[4];
-    private HardwareActionBindable[] mArrowActions = new HardwareActionBindable[4];
+    private final AtomicInteger mChannel = new AtomicInteger(0);
+    private final DrumPadLight[] drumPadLights = new DrumPadLight[64];
+    private final HardwareActionBindable[] mPlayNote;
+    private final HardwareActionBindable[] mReleaseNote;
+    private final AbsoluteHardwarControlBindable[] mAftertouchNote;
+    private final AbsoluteHardwarControlBindable mChannelPressure;
+    private final ArrowPadLight[] mArrowLights = new ArrowPadLight[4];
+    private final HardwareActionBindable[] mArrowActions = new HardwareActionBindable[4];
 
     private class ArrowPadLight {
-        private int mOffset;
-        private IntegerValue mScrollPosition;
-        private ColorValue mTrackColor;
+        private final int mOffset;
+        private final IntegerValue mScrollPosition;
+        private final ColorValue mTrackColor;
         public ArrowPadLight(LaunchpadXSurface surface, int offset, IntegerValue scrollPosition, ColorValue trackColor) {
             mOffset = offset;
             mScrollPosition = scrollPosition;
@@ -48,10 +48,10 @@ public class DrumPadMode extends AbstractMode {
     }
 
     private class DrumPadLight {
-        private ColorValue mColor;
-        private AtomicBoolean mPlaying;
-        private BooleanValue mExists;
-        private BooleanValue mEnabled;
+        private final ColorValue mColor;
+        private final AtomicBoolean mPlaying;
+        private final BooleanValue mExists;
+        private final BooleanValue mEnabled;
         public DrumPadLight(LaunchpadXSurface surface, DrumPad drumPad, AtomicBoolean playing) {
             mColor = drumPad.color();
             mPlaying = playing;

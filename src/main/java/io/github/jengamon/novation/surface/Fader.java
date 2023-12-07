@@ -10,11 +10,11 @@ import io.github.jengamon.novation.surface.state.FaderLightState;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Fader {
-    private HardwareSlider mFader;
-    private MultiStateHardwareLight mLight;
-    private AtomicInteger mCC = new AtomicInteger(0);
+    private final HardwareSlider mFader;
+    private final MultiStateHardwareLight mLight;
+    private final AtomicInteger mCC = new AtomicInteger(0);
 
-    private MidiIn mIn;
+    private final MidiIn mIn;
 
     public Fader(Session session, HardwareSurface surface, String name, double x, double y) {
         mFader = surface.createHardwareSlider(name);

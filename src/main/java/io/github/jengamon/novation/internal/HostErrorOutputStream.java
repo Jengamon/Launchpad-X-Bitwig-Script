@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class HostErrorOutputStream extends OutputStream {
-    private ControllerHost mHost;
+    private final ControllerHost mHost;
     private String mBuffer = "";
 
 
@@ -15,17 +15,14 @@ public class HostErrorOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(int b) throws IOException {
+    public void write(int b) {
         switch((char)b) {
             case '\n':
                 mHost.errorln(mBuffer);
                 mBuffer = "";
                 break;
             default:
-                StringBuilder builder = new StringBuilder();
-                builder.append(mBuffer);
-                builder.append((char)b);
-                mBuffer = builder.toString();
+                mBuffer += (char) b;
         }
     }
 }

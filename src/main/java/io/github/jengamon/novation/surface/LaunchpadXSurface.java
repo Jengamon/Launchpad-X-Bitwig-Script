@@ -8,24 +8,24 @@ import io.github.jengamon.novation.internal.Session;
 import java.util.Arrays;
 
 public class LaunchpadXSurface {
-    private CCButton mUpArrow;
-    private CCButton mDownArrow;
-    private CCButton mLeftArrow;
-    private CCButton mRightArrow;
-    private CCButton mSessionButton;
-    private CCButton mNoteButton;
-    private CCButton mCustomButton;
-    private CCButton mRecordButton;
-    private CCButton mNovationButton;
-    private AbsoluteHardwareControl mChannelPressure;
-    private Session mSession;
-    private HardwareSurface mSurface;
+    private final CCButton mUpArrow;
+    private final CCButton mDownArrow;
+    private final CCButton mLeftArrow;
+    private final CCButton mRightArrow;
+    private final CCButton mSessionButton;
+    private final CCButton mNoteButton;
+    private final CCButton mCustomButton;
+    private final CCButton mRecordButton;
+    private final CCButton mNovationButton;
+    private final AbsoluteHardwareControl mChannelPressure;
+    private final Session mSession;
+    private final HardwareSurface mSurface;
 
-    private CCButton[] mSceneButtons;
+    private final CCButton[] mSceneButtons;
 
-    private NoteButton[][] mNoteButtons;
+    private final NoteButton[][] mNoteButtons;
 
-    private Fader[] mFaders;
+    private final Fader[] mFaders;
 
     //private int[] mVolumeFaderCCs = new int[]{21, 22, 23, 24, 25, 26, 27, 28};
     //private int[] mFaderCCs = new int[]{45, 46, 47, 48, 49, 50, 51, 52};
@@ -88,7 +88,7 @@ public class LaunchpadXSurface {
         for(int row = 0; row < 8; row++) {
             mNoteButtons[row] = new NoteButton[8];
             for(int col = 0; col < 8; col++) {
-                mNoteButtons[row][col] = new NoteButton(host, session, surface, "" + row + "," + col, row_offsets[row] + col + 1, drum_pad_notes[row * 8 + col], 13 + (col * 23), 13 + 23 + (row * 23));
+                mNoteButtons[row][col] = new NoteButton(host, session, surface, row + "," + col, row_offsets[row] + col + 1, drum_pad_notes[row * 8 + col], 13 + (col * 23), 13 + 23 + (row * 23));
             }
         }
 

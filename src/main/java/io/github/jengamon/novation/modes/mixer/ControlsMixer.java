@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ControlsMixer extends AbstractFaderMixerMode {
-    private FixedFaderLight[] faderLights = new FixedFaderLight[8];
-    private Parameter[] controls = new Parameter[8];
+    private final FixedFaderLight[] faderLights = new FixedFaderLight[8];
+    private final Parameter[] controls = new Parameter[8];
     private static final byte[] CONTROL_TAGS = new byte[] {
             (byte)0x05,
             (byte)0x54,
@@ -25,8 +25,8 @@ public class ControlsMixer extends AbstractFaderMixerMode {
     };
 
     private class FixedFaderLight {
-        private byte mColor;
-        private BooleanValue mExists;
+        private final byte mColor;
+        private final BooleanValue mExists;
         public FixedFaderLight(LaunchpadXSurface surface, byte color, BooleanValue exists) {
             mExists = exists;
             mColor = color;

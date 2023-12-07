@@ -6,10 +6,10 @@ import com.bitwig.extension.controller.api.InternalHardwareLightState;
 import io.github.jengamon.novation.Utils;
 
 public class PadLightState extends InternalHardwareLightState {
-    private byte mSolid;
-    private byte mPulse;
-    private byte mBlink;
-    private double mBPM;
+    private final byte mSolid;
+    private final byte mPulse;
+    private final byte mBlink;
+    private final double mBPM;
 
     public PadLightState(double bpm, byte solid, byte blink, byte pulse) {
         mBPM = bpm;

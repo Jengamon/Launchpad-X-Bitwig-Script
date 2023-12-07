@@ -6,7 +6,7 @@ import com.bitwig.extension.controller.api.InternalHardwareLightState;
 import io.github.jengamon.novation.Utils;
 
 public class FaderLightState extends InternalHardwareLightState {
-    private byte mSolid;
+    private final byte mSolid;
 
     public FaderLightState(byte solid) {
         mSolid = (solid < 0 ? 0 : solid);

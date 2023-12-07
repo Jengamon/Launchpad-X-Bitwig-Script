@@ -8,8 +8,8 @@ import io.github.jengamon.novation.surface.state.FaderLightState;
 import java.util.function.Consumer;
 
 public class TrackColorFaderLight {
-    private BooleanValue mValid;
-    private ColorValue mColor;
+    private final BooleanValue mValid;
+    private final ColorValue mColor;
 
     public TrackColorFaderLight(LaunchpadXSurface surface, Track track, Consumer<LaunchpadXSurface> redraw) {
         mValid = track.exists();

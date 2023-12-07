@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class StopClipMixer extends AbstractSessionMixerMode {
-    private StopRowPadLight[] mStopPads = new StopRowPadLight[8];
-    private HardwareActionBindable[] mStopAction = new HardwareActionBindable[8];
+    private final StopRowPadLight[] mStopPads = new StopRowPadLight[8];
+    private final HardwareActionBindable[] mStopAction = new HardwareActionBindable[8];
 
     private class StopRowPadLight {
-        private BooleanValue mStop;
-        private BooleanValue mExists;
+        private final BooleanValue mStop;
+        private final BooleanValue mExists;
         public StopRowPadLight(LaunchpadXSurface surface, Track track) {
             mStop = track.isStopped();
             mExists = track.exists();

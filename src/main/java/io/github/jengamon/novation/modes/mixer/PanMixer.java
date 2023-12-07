@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PanMixer extends AbstractFaderMixerMode {
-    private TrackColorFaderLight[] faderLights = new TrackColorFaderLight[8];
-    private Parameter[] pans = new Parameter[8];
+    private final TrackColorFaderLight[] faderLights = new TrackColorFaderLight[8];
+    private final Parameter[] pans = new Parameter[8];
 
-    private ArrowPadLight trackForwardLight;
-    private ArrowPadLight trackBackwardLight;
-    private HardwareActionBindable trackForwardAction;
-    private HardwareActionBindable trackBackwardAction;
+    private final ArrowPadLight trackForwardLight;
+    private final ArrowPadLight trackBackwardLight;
+    private final HardwareActionBindable trackForwardAction;
+    private final HardwareActionBindable trackBackwardAction;
 
     public PanMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
                     LaunchpadXSurface surface, TrackBank bank) {

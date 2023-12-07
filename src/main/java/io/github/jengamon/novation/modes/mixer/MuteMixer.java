@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MuteMixer extends AbstractSessionMixerMode {
-    private MuteRowPadLight[] mMutePads = new MuteRowPadLight[8];
-    private HardwareActionBindable[] mMuteAction = new HardwareActionBindable[8];
+    private final MuteRowPadLight[] mMutePads = new MuteRowPadLight[8];
+    private final HardwareActionBindable[] mMuteAction = new HardwareActionBindable[8];
 
     private class MuteRowPadLight {
-        private BooleanValue mMute;
-        private BooleanValue mExists;
+        private final BooleanValue mMute;
+        private final BooleanValue mExists;
         public MuteRowPadLight(LaunchpadXSurface surface, Track track) {
             mMute = track.mute();
             mExists = track.exists();

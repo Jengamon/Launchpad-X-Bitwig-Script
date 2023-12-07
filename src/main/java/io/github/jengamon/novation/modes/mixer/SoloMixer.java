@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SoloMixer extends AbstractSessionMixerMode {
-    private SoloRowPadLight[] mSoloPads = new SoloRowPadLight[8];
-    private HardwareActionBindable[] mSoloAction = new HardwareActionBindable[8];
+    private final SoloRowPadLight[] mSoloPads = new SoloRowPadLight[8];
+    private final HardwareActionBindable[] mSoloAction = new HardwareActionBindable[8];
 
     private class SoloRowPadLight {
-        private BooleanValue mSolo;
-        private BooleanValue mExists;
+        private final BooleanValue mSolo;
+        private final BooleanValue mExists;
         public SoloRowPadLight(LaunchpadXSurface surface, Track track) {
             mSolo = track.solo();
             mExists = track.exists();

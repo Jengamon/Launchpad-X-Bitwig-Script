@@ -9,8 +9,8 @@ import io.github.jengamon.novation.surface.state.PadLightState;
 import java.util.function.Consumer;
 
 public class ArrowPadLight {
-    private BooleanValue mIsValid;
-    private int mColor;
+    private final BooleanValue mIsValid;
+    private final int mColor;
     public ArrowPadLight(LaunchpadXSurface surface, BooleanValue isValid, int color, Consumer<LaunchpadXSurface> redraw) {
         mIsValid = isValid;
         mColor = color;

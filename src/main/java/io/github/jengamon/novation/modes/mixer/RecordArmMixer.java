@@ -11,14 +11,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RecordArmMixer extends AbstractSessionMixerMode {
-    private ArmRowPadLight[] mArmPads = new ArmRowPadLight[8];
-    private HardwareActionBindable[] mArmAction = new HardwareActionBindable[8];
+    private final ArmRowPadLight[] mArmPads = new ArmRowPadLight[8];
+    private final HardwareActionBindable[] mArmAction = new HardwareActionBindable[8];
 
     private class ArmRowPadLight {
-        private BooleanValue mArm;
-        private BooleanValue mHasNoteInput;
-        private BooleanValue mHasAudioInput;
-        private BooleanValue mExists;
+        private final BooleanValue mArm;
+        private final BooleanValue mHasNoteInput;
+        private final BooleanValue mHasAudioInput;
+        private final BooleanValue mExists;
         public ArmRowPadLight(LaunchpadXSurface surface, Track track) {
             mArm = track.arm();
             mExists = track.exists();

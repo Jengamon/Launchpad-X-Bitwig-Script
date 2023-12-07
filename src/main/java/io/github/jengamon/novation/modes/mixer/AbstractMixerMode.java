@@ -27,7 +27,7 @@ public abstract class AbstractMixerMode extends AbstractMode {
             Mode.MIXER_SOLO,
             Mode.MIXER_ARM
     };
-    private HardwareActionBindable[] sceneActions = new HardwareActionBindable[8];
+    private final HardwareActionBindable[] sceneActions = new HardwareActionBindable[8];
     protected int mModeColor;
 
     public AbstractMixerMode(AtomicReference<Mode> mixerMode, ControllerHost host,
@@ -41,7 +41,7 @@ public abstract class AbstractMixerMode extends AbstractMode {
 
         for(int i = 0; i < 8; i++) {
             final int j = i;
-            sceneActions[i] = host.createAction(() -> mModeMachine.setMode(lSurf, scenemodes[j]), () -> "Set mode to " + scenemodes[j].toString());
+            sceneActions[i] = host.createAction(() -> mModeMachine.setMode(lSurf, scenemodes[j]), () -> "Set mode to " + scenemodes[j]);
         }
     }
 

@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Utils {
-    private static final Color[] NOVATION_COLORS = new Color[] {
+    private static final Color[] NOVATION_COLORS = new Color[]{
             // 00 - 07
             Color.fromRGBA255(0, 0, 0, 0),
             Color.fromRGB255(0xb3, 0xb3, 0xb3),
@@ -153,39 +153,6 @@ public class Utils {
             Color.fromRGB255(0xbc, 0x75, 0x5f)
     };
 
-    private static final Map<Integer, Byte> INDEX_COLORS = new HashMap<>();
-
-    static {
-        INDEX_COLORS.put(0xff5706, (byte) 0x54);
-        INDEX_COLORS.put(0xd99d10, (byte) 0x3D);
-        INDEX_COLORS.put(0x545454, (byte) 0x75);
-        INDEX_COLORS.put(0x7a7a7a, (byte) 0x76);
-        INDEX_COLORS.put(0xc9c9c9, (byte) 0x77);
-        INDEX_COLORS.put(0x8689ac, (byte) 0x74);
-        INDEX_COLORS.put(0xa37943, (byte) 0x3D);
-        INDEX_COLORS.put(0xc69f70, (byte) 0x7E);
-        INDEX_COLORS.put(0x00a694, (byte) 0x41);
-        INDEX_COLORS.put(0x5761c6, (byte) 0x2D);
-        INDEX_COLORS.put(0x848ae0, (byte) 0x2C);
-        INDEX_COLORS.put(0x9549cb, (byte) 0x36);
-        INDEX_COLORS.put(0xbc76f0, (byte) 0x35);
-        INDEX_COLORS.put(0x0099d9, (byte) 0x27);
-        INDEX_COLORS.put(0x44c8ff, (byte) 0x25);
-        INDEX_COLORS.put(0x43d2b9, (byte) 0x21);
-        INDEX_COLORS.put(0x009d47, (byte) 0x1B);
-        INDEX_COLORS.put(0x3ebb62, (byte) 0x19);
-        INDEX_COLORS.put(0xd93871, (byte) 0x39);
-        INDEX_COLORS.put(0xe16691, (byte) 0x38);
-        INDEX_COLORS.put(0xd92e24, (byte) 0x6A);
-        INDEX_COLORS.put(0xec6157, (byte) 0x6B);
-        INDEX_COLORS.put(0xff833e, (byte) 0x6C);
-        INDEX_COLORS.put(0xe4b74e, (byte) 0x3E);
-        INDEX_COLORS.put(0x739814, (byte) 0x13);
-        INDEX_COLORS.put(0xa0c04c, (byte) 0x11);
-        INDEX_COLORS.put(0x808080, (byte) 0x1);
-        INDEX_COLORS.put(0x7f7f7f, (byte) 0x1);
-    }
-
     public static String printColor(Color c) {
         return "R" + c.getRed255() + "G" + c.getGreen255() + "B" + c.getBlue255() + "A" + c.getAlpha255();
     }
@@ -198,20 +165,27 @@ public class Utils {
     private static byte toNovationApprox(Color c) {
         List<Color> colors = Arrays.asList(NOVATION_COLORS);
         List<Double> colorDistance = colors.stream()
-                .map(color -> Math.sqrt(Math.pow(c.getRed() - color.getRed(), 2) + Math.pow(c.getGreen() - color.getGreen(), 2) + Math.pow(c.getBlue() - color.getBlue(), 2)))
+                .map(color -> {
+                    // redmean calc from https://www.compuphase.com/cmetric.htm
+                    int rbar = (c.getRed255() + color.getRed255()) / 2;
+                    return Math.sqrt(
+                            (2 + (rbar / 256.0)) * Math.pow(c.getRed255() - color.getRed255(), 2) +
+                                    4 * Math.pow(c.getGreen255() - color.getGreen255(), 2) +
+                                    (2 + ((255 - rbar) / 256.0)) * Math.pow(c.getBlue255() - color.getBlue255(), 2)
+                    );
+                })
                 .collect(Collectors.toList());
-        return (byte)colorDistance.indexOf(Collections.min(colorDistance));
+        return (byte) colorDistance.indexOf(Collections.min(colorDistance));
     }
 
     // Use nicer approximations of Bitwig fixed colors
     public static byte toNovation(Color c) {
-        int color_index = (c.getRed255() << 16) | (c.getGreen255() << 8) | (c.getBlue255());
-        return INDEX_COLORS.computeIfAbsent(color_index, ci -> toNovationApprox(c));
+        return toNovationApprox(c);
     }
 
     public static String toHexString(byte... data) {
         StringBuilder builder = new StringBuilder();
-        for(byte dp : data) {
+        for (byte dp : data) {
             builder.append(Character.forDigit((dp >> 4) & 0xF, 16));
             builder.append(Character.forDigit(dp & 0xF, 16));
         }
@@ -222,8 +196,8 @@ public class Utils {
         String message = sysex.substring(12, sysex.length() - 2);
 //        System.out.println(sysex);
         byte[] bytes = new byte[message.length() / 2];
-        for(int i = 0; i < bytes.length; i++) {
-            bytes[i] = (byte)(Integer.parseInt(message.substring(i * 2, i * 2 + 2), 16) & 0xff);
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) (Integer.parseInt(message.substring(i * 2, i * 2 + 2), 16) & 0xff);
         }
         return bytes;
     }

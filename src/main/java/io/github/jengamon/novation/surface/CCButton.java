@@ -10,9 +10,9 @@ import io.github.jengamon.novation.surface.state.PadLightState;
  * Represents a pad that communicates with the device over CC.
  */
 public class CCButton extends LaunchpadXPad {
-    private HardwareButton mButton;
-    private MultiStateHardwareLight mLight;
-    private int mCC;
+    private final HardwareButton mButton;
+    private final MultiStateHardwareLight mLight;
+    private final int mCC;
 
     public CCButton(Session session, HardwareSurface surface, String name, int cc, double x, double y) {
         mCC = cc;

@@ -8,13 +8,13 @@ import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.controller.api.NoteInput;
 
 public class Session {
-    private MidiIn dawIn;
-    private MidiOut dawOut;
+    private final MidiIn dawIn;
+    private final MidiOut dawOut;
 
-    private MidiIn customIn;
-    private MidiOut customOut;
+    private final MidiIn customIn;
+    private final MidiOut customOut;
 
-    private NoteInput noteInput;
+    private final NoteInput noteInput;
 
     private final static String SYSEX_HEADER = "f0 00 20 29 02 0c";
 

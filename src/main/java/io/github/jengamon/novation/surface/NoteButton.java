@@ -12,12 +12,12 @@ import io.github.jengamon.novation.surface.state.PadLightState;
  * a drum pad mode note and a session view note
  */
 public class NoteButton extends LaunchpadXPad {
-    private HardwareButton mButton;
-    private AbsoluteHardwareKnob mAftertouch;
+    private final HardwareButton mButton;
+    private final AbsoluteHardwareKnob mAftertouch;
 
-    private MultiStateHardwareLight mLight;
-    private int mNote;
-    private int mDPNote;
+    private final MultiStateHardwareLight mLight;
+    private final int mNote;
+    private final int mDPNote;
 
     public NoteButton(ControllerHost host, Session session, HardwareSurface surface, String name, int note, int dpnote, double x, double y) {
         mNote = note;
@@ -47,9 +47,9 @@ public class NoteButton extends LaunchpadXPad {
 
         MidiIn in = session.midiIn(ChannelType.DAW);
 
-        String expr = host.midiExpressions().createIsNoteOnExpression(0, note);
+//        String expr = host.midiExpressions().createIsNoteOnExpression(0, note);
         String aftExpr = host.midiExpressions().createIsPolyAftertouch(0, note);
-        String drumExpr = host.midiExpressions().createIsNoteOnExpression(8, dpnote);
+//        String drumExpr = host.midiExpressions().createIsNoteOnExpression(8, dpnote);
         String drumAftExpr = host.midiExpressions().createIsPolyAftertouch(8, dpnote);
 
 //        System.out.println(drumExpr);
