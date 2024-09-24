@@ -8,14 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 12
-        uses: actions/setup-java@v1
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v2
         with:
-          java-version: 12
+          distribution: 'temurin'
+          java-version: '21.0.4+7.0.LTS'
       - name: Build with Maven
         run: mvn -B install --file pom.xml
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: Launchpad Extension
           path: ./target/LaunchpadX.bwextension
