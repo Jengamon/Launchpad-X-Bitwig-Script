@@ -11,11 +11,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 12
+      - name: Set up JDK
         uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
-          java-version: 12
+          java-version: '21.0.4+7.0.LTS'
       - name: Build with Maven
         run: mvn -B install --file pom.xml
       - name: Upload asset to release
