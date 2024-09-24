@@ -1,6 +1,7 @@
 package io.github.jengamon.novation;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
+import com.bitwig.extension.callback.ObjectValueChangedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.*;
 import io.github.jengamon.novation.internal.ChannelType;
@@ -62,11 +63,23 @@ public class LaunchpadXExtension extends ControllerExtension
       TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
       mSessionTrackBank.setSkipDisabledItems(true);
 
-      mViewableBanks.addValueObserver(vb -> {
-         mSessionTrackBank.sceneBank().setIndication(vb);
-         for(int i = 0; i < mSessionTrackBank.getCapacityOfBank(); i++) {
-            mSessionTrackBank.getItemAt(i).clipLauncherSlotBank().setIndication(vb);
+      mViewableBanks.addValueObserver(vb -> mSessionTrackBank.sceneBank().setIndication(vb));
+
+      mCursorTrack.playingNotes().addValueObserver(new ObjectValueChangedCallback<PlayingNote[]>() {
+         // yoinked from the BW script mwahahaha
+         @Override
+         public void valueChanged(PlayingNote[] playingNotes) {
+            for(int pitch : mPrevPitches) {
+               mSession.midiOut(ChannelType.DAW).sendMidi(0x8f, pitch, 0);
+            }
+
+            for (PlayingNote playingNote : playingNotes) {
+               mSession.midiOut(ChannelType.DAW).sendMidi(0x9f, playingNote.pitch(), 21);
+               mPrevPitches.add(playingNote.pitch());
+            }
          }
+
+         final ArrayList<Integer> mPrevPitches = new ArrayList<>();
       });
 
       // Create surface buttons and their lights
@@ -270,7 +283,7 @@ public class LaunchpadXExtension extends ControllerExtension
    /** Called when we receive short MIDI message on port 1. */
    private void onMidi1(ShortMidiMessage msg)
    {
-      // System.out.println("C: " + Utils.toHexString((byte)msg.getStatusByte()) + Utils.toHexString((byte)msg.getData1()) + Utils.toHexString((byte)msg.getData2()));
+//       System.out.println("C: " + Utils.toHexString((byte)msg.getStatusByte()) + Utils.toHexString((byte)msg.getData1()) + Utils.toHexString((byte)msg.getData2()));
    }
 
 //   /** Called when we receive sysex MIDI message on port 1. */
