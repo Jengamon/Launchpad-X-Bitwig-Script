@@ -73,6 +73,8 @@ public class LaunchpadXExtension extends ControllerExtension
                mSession.midiOut(ChannelType.DAW).sendMidi(0x8f, pitch, 0);
             }
 
+            mPrevPitches.clear();
+
             for (PlayingNote playingNote : playingNotes) {
                mSession.midiOut(ChannelType.DAW).sendMidi(0x9f, playingNote.pitch(), 21);
                mPrevPitches.add(playingNote.pitch());
