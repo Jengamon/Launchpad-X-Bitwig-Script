@@ -19,7 +19,7 @@ jobs:
       - name: Build with Maven
         run: mvn -B install --file pom.xml
       - name: Upload asset to release
-        uses: Shopify/upload-to-release@v1
+        uses: Shopify/upload-to-release@v2.0.0
         with:
           name: 'Launchpad X Extension'
           path: './target/LaunchpadX.bwextension'
