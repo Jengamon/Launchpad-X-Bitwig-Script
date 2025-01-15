@@ -12,6 +12,7 @@ import io.github.jengamon.novation.surface.state.PadLightState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SessionMode extends AbstractMode {
     private final SessionSceneLight[] sceneLights = new SessionSceneLight[8];
@@ -50,7 +51,7 @@ public class SessionMode extends AbstractMode {
         }
     }
 
-    public SessionMode(TrackBank bank, Transport transport, LaunchpadXSurface surface, ControllerHost host, BooleanValue pulseSessionPads) {
+    public SessionMode(TrackBank bank, Transport transport, LaunchpadXSurface surface, ControllerHost host, BooleanValue pulseSessionPads, AtomicBoolean launchAlt) {
 //        int[] ids = new int[]{89, 79, 69, 59, 49, 39, 29, 19};
         RangedValue bpm = transport.tempo().modulatedValue();
 
@@ -60,7 +61,11 @@ public class SessionMode extends AbstractMode {
             sceneLights[i] = new SessionSceneLight(surface, scene, pulseSessionPads, bpm);
             int finalI = i;
             sceneLaunchActions[i] = host.createAction(() -> {
-                scene.launch();
+                if (launchAlt.get()) {
+                    scene.launchAlt();
+                } else {
+                    scene.launch();
+                }
                 scene.selectInEditor();
             }, () -> "Press Scene " + finalI);
         }
@@ -85,8 +90,16 @@ public class SessionMode extends AbstractMode {
                 ClipLauncherSlotBank slotBank = track.clipLauncherSlotBank();
                 ClipLauncherSlot slot = slotBank.getItemAt(scene);
 
+                int finalTrk = trk;
+                int finalScene = scene;
                 padLights[scene][trk] = new SessionPadLight(surface, slot, track, bpm, this::redraw, scene);
-                padActions[scene][trk] = slot.launchAction();
+                padActions[scene][trk] = host.createAction(() -> {
+                    if (launchAlt.get()) {
+                        slot.launchAlt();
+                    } else {
+                        slot.launch();
+                    }
+                }, () -> "Press Scene " + finalScene + " Track " + finalTrk);
             }
         }
 

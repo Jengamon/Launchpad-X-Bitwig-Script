@@ -21,272 +21,334 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class LaunchpadXExtension extends ControllerExtension
-{
-   private Session mSession;
-   private HardwareSurface mSurface;
-   private LaunchpadXSurface mLSurface;
-   private ModeMachine mMachine;
+public class LaunchpadXExtension extends ControllerExtension {
+    private Session mSession;
+    private HardwareSurface mSurface;
+    private LaunchpadXSurface mLSurface;
+    private ModeMachine mMachine;
 
-   protected LaunchpadXExtension(final LaunchpadXExtensionDefinition definition, final ControllerHost host)
-   {
-      super(definition, host);
-   }
+    private final static String CLIP_LAUNCHER = "Clip Launcher";
+    private final static String GLOBAL = "Global";
+    private final static String TOGGLE_RECORD = "Toggle Record";
+    private final static String CYCLE_TRACKS = "Cycle Tracks";
+    private final static String LAUNCH_ALT = "Launch Alt";
 
-   @Override
-   public void init()
-   {
-      final ControllerHost host = getHost();
+    protected LaunchpadXExtension(final LaunchpadXExtensionDefinition definition, final ControllerHost host) {
+        super(definition, host);
+    }
 
-      Preferences prefs = host.getPreferences();
-      DocumentState documentPrefs = host.getDocumentState();
-      BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
-      BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
+    @Override
+    public void init() {
+        final ControllerHost host = getHost();
+
+        Preferences prefs = host.getPreferences();
+        DocumentState documentPrefs = host.getDocumentState();
+        BooleanValue mSwapOnBoot = prefs.getBooleanSetting("Swap to Session on Boot?", "Behavior", true);
+        BooleanValue mPulseSessionPads = prefs.getBooleanSetting("Pulse Session Scene Pads?", "Behavior", false);
 //      BooleanValue mFollowCursorTrack = prefs.getBooleanSetting("Follow Cursor Track?", "Behavior", true);
-      BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
-      BooleanValue mStopClipsBeforeToggle = prefs.getBooleanSetting("Stop Recording Clips before Toggle Record?", "Record Button", false);
+        BooleanValue mViewableBanks = prefs.getBooleanSetting("Viewable Bank?", "Behavior", true);
+        BooleanValue mStopClipsBeforeToggle = prefs.getBooleanSetting("Stop Recording Clips before Toggle Record?", "Record Button", false);
 
-      EnumValue mRecordLevel = documentPrefs.getEnumSetting("Rec. Target", "Record Button", new String[]{"Global", "Clip Launcher"}, "Clip Launcher");
-      EnumValue mRecordAction = documentPrefs.getEnumSetting("Action", "Record Button", new String[]{"Toggle Record", "Cycle Tracks"}, "Toggle Record");
+        EnumValue mRecordLevel = documentPrefs.getEnumSetting("Rec. Target", "Record Button", new String[]{GLOBAL, CLIP_LAUNCHER}, CLIP_LAUNCHER);
+        EnumValue mRecordAction = documentPrefs.getEnumSetting("Action", "Record Button", new String[]{TOGGLE_RECORD, CYCLE_TRACKS, LAUNCH_ALT}, TOGGLE_RECORD);
 
-      // Replace System.out and System.err with ones that should actually work
-      System.setOut(new PrintStream(new HostOutputStream(host)));
-      System.setErr(new PrintStream(new HostErrorOutputStream(host)));
+        // Replace System.out and System.err with ones that should actually work
+        System.setOut(new PrintStream(new HostOutputStream(host)));
+        System.setErr(new PrintStream(new HostErrorOutputStream(host)));
 
-      // Create the requisite state objects
-      mSession = new Session(host);
-      mSurface = host.createHardwareSurface();
-      Transport mTransport = host.createTransport();
-      CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
-      CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
-      CursorDevice mControlsCursorDevice = mCursorTrack.createCursorDevice("Primary IoE", "Primary Device", 0, CursorDeviceFollowMode.FOLLOW_SELECTION);
-      TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
-      mSessionTrackBank.setSkipDisabledItems(true);
+        // Create the requisite state objects
+        mSession = new Session(host);
+        mSurface = host.createHardwareSurface();
+        Transport mTransport = host.createTransport();
+        CursorTrack mCursorTrack = host.createCursorTrack(8, 0);
+        CursorDevice mCursorDevice = mCursorTrack.createCursorDevice("Primary", "Primary Instrument", 0, CursorDeviceFollowMode.FIRST_INSTRUMENT);
+        CursorDevice mControlsCursorDevice = mCursorTrack.createCursorDevice("Primary IoE", "Primary Device", 0, CursorDeviceFollowMode.FOLLOW_SELECTION);
+        TrackBank mSessionTrackBank = host.createTrackBank(8, 0, 8, true);
+        mSessionTrackBank.setSkipDisabledItems(true);
 
-      mViewableBanks.addValueObserver(vb -> mSessionTrackBank.sceneBank().setIndication(vb));
+        mViewableBanks.addValueObserver(vb -> mSessionTrackBank.sceneBank().setIndication(vb));
 
-      mCursorTrack.playingNotes().addValueObserver(new ObjectValueChangedCallback<PlayingNote[]>() {
-         // yoinked from the BW script mwahahaha
-         @Override
-         public void valueChanged(PlayingNote[] playingNotes) {
-            for(int pitch : mPrevPitches) {
-               mSession.midiOut(ChannelType.DAW).sendMidi(0x8f, pitch, 0);
+        mCursorTrack.playingNotes().addValueObserver(new ObjectValueChangedCallback<PlayingNote[]>() {
+            // yoinked from the BW script mwahahaha
+            @Override
+            public void valueChanged(PlayingNote[] playingNotes) {
+                for (int pitch : mPrevPitches) {
+                    mSession.midiOut(ChannelType.DAW).sendMidi(0x8f, pitch, 0);
+                }
+
+                mPrevPitches.clear();
+
+                for (PlayingNote playingNote : playingNotes) {
+                    mSession.midiOut(ChannelType.DAW).sendMidi(0x9f, playingNote.pitch(), 21);
+                    mPrevPitches.add(playingNote.pitch());
+                }
             }
 
-            mPrevPitches.clear();
+            final ArrayList<Integer> mPrevPitches = new ArrayList<>();
+        });
 
-            for (PlayingNote playingNote : playingNotes) {
-               mSession.midiOut(ChannelType.DAW).sendMidi(0x9f, playingNote.pitch(), 21);
-               mPrevPitches.add(playingNote.pitch());
-            }
-         }
+        // Create surface buttons and their lights
+        mSurface.setPhysicalSize(241, 241);
+        mLSurface = new LaunchpadXSurface(host, mSession, mSurface);
+        mMachine = new ModeMachine(mSession);
 
-         final ArrayList<Integer> mPrevPitches = new ArrayList<>();
-      });
-
-      // Create surface buttons and their lights
-      mSurface.setPhysicalSize(241, 241);
-      mLSurface = new LaunchpadXSurface(host, mSession, mSurface);
-      mMachine = new ModeMachine(mSession);
-      mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mLSurface, host, mPulseSessionPads));
-      mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mLSurface, mCursorDevice));
-      mMachine.register(Mode.UNKNOWN, new AbstractMode() {
-         @Override
-         public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
-            return new ArrayList<>();
-         }
-      });
-
-      // Mixer modes
-      AtomicReference<Mode> mixerMode = new AtomicReference<>(Mode.MIXER_VOLUME);
-      mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_PAN, new PanMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_SEND, new SendMixer(mixerMode, host, mTransport, mLSurface, mCursorTrack));
-      mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mControlsCursorDevice));
-      mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-      mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        // Mixer modes
+        AtomicReference<Mode> mixerMode = new AtomicReference<>(Mode.MIXER_VOLUME);
+        mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_PAN, new PanMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_SEND, new SendMixer(mixerMode, host, mTransport, mLSurface, mCursorTrack));
+        mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mControlsCursorDevice));
+        mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
 //      MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
 
-      // Select record button behavior and light it accordingly
-      mCursorTrack.hasNext().markInterested();
-      AtomicBoolean recordActionToggle = new AtomicBoolean(false);
-      AtomicBoolean recordLevelGlobal = new AtomicBoolean(false);
-      mRecordAction.addValueObserver(val -> recordActionToggle.set(val.equals("Toggle Record")));
-      mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global")));
 
-      ClipLauncherSlotBank[] clsBanks = new ClipLauncherSlotBank[8];
-      for(int i = 0; i < mSessionTrackBank.getSizeOfBank(); i++) {
-         Track track = mSessionTrackBank.getItemAt(i);
-         ClipLauncherSlotBank slotbank = track.clipLauncherSlotBank();
-         clsBanks[i] = slotbank;
-         for(int j = 0; j < slotbank.getSizeOfBank(); j++) {
-            ClipLauncherSlot slot = slotbank.getItemAt(j);
-            slot.isRecording().markInterested();
-         }
-      }
+        // Setup "launchAlt" var
+        AtomicBoolean launchAlt = new AtomicBoolean(false);
+        AtomicBoolean launchAltConfig = new AtomicBoolean(false);
 
-      Runnable selectAction = () -> {
-         if(recordActionToggle.get()) {
-            boolean clipStopped = false;
-
-            if(mStopClipsBeforeToggle.get()) {
-               for(ClipLauncherSlotBank bank : clsBanks) {
-                  int targetSlot = -1;
-                  for(int i = 0; i < bank.getSizeOfBank(); i++) {
-                     ClipLauncherSlot slot = bank.getItemAt(i);
-                     if(slot.isRecording().get()) {
-                        targetSlot = i;
-                        break;
-                     }
-                  }
-
-                  if(targetSlot >= 0) {
-                     clipStopped = true;
-                     bank.stop();
-                     bank.launch(targetSlot);
-                  }
-               }
+        // Session modes
+        mMachine.register(Mode.SESSION, new SessionMode(mSessionTrackBank, mTransport, mLSurface, host, mPulseSessionPads, launchAlt));
+        mMachine.register(Mode.DRUM, new DrumPadMode(host, mSession, mLSurface, mCursorDevice));
+        mMachine.register(Mode.UNKNOWN, new AbstractMode() {
+            @Override
+            public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
+                return new ArrayList<>();
             }
+        });
+        // Select record button behavior and light it accordingly
+        mCursorTrack.hasNext().markInterested();
+        AtomicBoolean recordActionToggle = new AtomicBoolean(false);
+        AtomicBoolean recordLevelGlobal = new AtomicBoolean(false);
+        mRecordAction.addValueObserver(val -> {
+            recordActionToggle.set(val.equals(TOGGLE_RECORD));
+            launchAltConfig.set(val.equals(LAUNCH_ALT));
+        });
+        mRecordLevel.addValueObserver(val -> recordLevelGlobal.set(val.equals("Global")));
 
-            // Only toggle the record button if we *didn't* stop any clips.
-            if(!clipStopped) {
-               if (recordLevelGlobal.get()) {
-                  mTransport.isArrangerRecordEnabled().toggle();
-               } else {
-                  mTransport.isClipLauncherOverdubEnabled().toggle();
-               }
+        ClipLauncherSlotBank[] clsBanks = new ClipLauncherSlotBank[8];
+        for (int i = 0; i < mSessionTrackBank.getSizeOfBank(); i++) {
+            Track track = mSessionTrackBank.getItemAt(i);
+            ClipLauncherSlotBank slotbank = track.clipLauncherSlotBank();
+            clsBanks[i] = slotbank;
+            for (int j = 0; j < slotbank.getSizeOfBank(); j++) {
+                ClipLauncherSlot slot = slotbank.getItemAt(j);
+                slot.isRecording().markInterested();
             }
-         } else {
-            if(mCursorTrack.hasNext().get()) {
-               mCursorTrack.selectNext();
+        }
+
+        Runnable selectAction = () -> {
+            if (recordActionToggle.get()) {
+                boolean clipStopped = false;
+
+                if (mStopClipsBeforeToggle.get()) {
+                    for (ClipLauncherSlotBank bank : clsBanks) {
+                        int targetSlot = -1;
+                        for (int i = 0; i < bank.getSizeOfBank(); i++) {
+                            ClipLauncherSlot slot = bank.getItemAt(i);
+                            if (slot.isRecording().get()) {
+                                targetSlot = i;
+                                break;
+                            }
+                        }
+
+                        if (targetSlot >= 0) {
+                            clipStopped = true;
+                            bank.stop();
+                            bank.launch(targetSlot);
+                        }
+                    }
+                }
+
+                // Only toggle the record button if we *didn't* stop any clips.
+                if (!clipStopped) {
+                    if (recordLevelGlobal.get()) {
+                        mTransport.isArrangerRecordEnabled().toggle();
+                    } else {
+                        mTransport.isClipLauncherOverdubEnabled().toggle();
+                    }
+                }
+            } else if (!launchAltConfig.get()) {
+                // if we *aren't* configured to alt launch
+                if (mCursorTrack.hasNext().get()) {
+                    mCursorTrack.selectNext();
+                } else {
+                    mCursorTrack.selectFirst();
+                }
             } else {
-               mCursorTrack.selectFirst();
+                launchAlt.set(true);
             }
-         }
-         host.requestFlush();
-      };
+            host.requestFlush();
+        };
 
-      HardwareActionBindable recordState = host.createAction(selectAction, () -> "Press Record Button");
-      mLSurface.record().button().pressedAction().setBinding(recordState);
-      
-      MultiStateHardwareLight recordLight = mLSurface.record().light();
-      BooleanValue arrangerRecord = mTransport.isArrangerRecordEnabled();
-      BooleanValue clipLauncherOverdub = mTransport.isClipLauncherOverdubEnabled();
-      arrangerRecord.addValueObserver(are -> {
-         if(are || clipLauncherOverdub.get()) {
-            recordLight.state().setValue(PadLightState.solidLight(5));
-         } else {
-            recordLight.state().setValue(PadLightState.solidLight(7));
-         }
-      });
-      clipLauncherOverdub.addValueObserver(ode -> {
-         if(ode || arrangerRecord.get()) {
-            recordLight.state().setValue(PadLightState.solidLight(5));
-         } else {
-            recordLight.state().setValue(PadLightState.solidLight(7));
-         }
-      });
+        HardwareActionBindable recordState = host.createAction(selectAction, () -> "Press Record Button");
+        mLSurface.record().button().pressedAction().setBinding(recordState);
+        mLSurface.record().button().releasedAction().setBinding(host.createAction(
+                () -> {
+                    if (launchAltConfig.get()) {
+                        launchAlt.set(false);
+                    }
+                    host.requestFlush();
+                }, () -> "Release Record Action"
+        ));
 
-      mLSurface.novation().light().state().setValue(PadLightState.solidLight(3));
+        MultiStateHardwareLight recordLight = mLSurface.record().light();
+        BooleanValue arrangerRecord = mTransport.isArrangerRecordEnabled();
+        BooleanValue clipLauncherOverdub = mTransport.isClipLauncherOverdubEnabled();
+        mRecordLevel.addValueObserver(
+                target -> {
+                    if(recordActionToggle.get()) {
+                        if (target.equals(GLOBAL)) {
+                            if (arrangerRecord.get()) {
+                                recordLight.state().setValue(PadLightState.solidLight(5));
+                            } else {
+                                recordLight.state().setValue(PadLightState.solidLight(7));
+                            }
+                        } else if (target.equals(CLIP_LAUNCHER)) {
+                            if (clipLauncherOverdub.get()) {
+                                recordLight.state().setValue(PadLightState.solidLight(5));
+                            } else {
+                                recordLight.state().setValue(PadLightState.solidLight(7));
+                            }
+                        }
+                    }
+                }
+        );
+        arrangerRecord.addValueObserver(are -> {
+            if (recordActionToggle.get() && mRecordLevel.get().equals(GLOBAL)) {
+                if (are) {
+                    recordLight.state().setValue(PadLightState.solidLight(5));
+                } else {
+                    recordLight.state().setValue(PadLightState.solidLight(7));
+                }
+            }
+        });
+        clipLauncherOverdub.addValueObserver(ode -> {
+            if (recordActionToggle.get() && mRecordLevel.get().equals(CLIP_LAUNCHER)) {
+                if (ode) {
+                    recordLight.state().setValue(PadLightState.solidLight(5));
+                } else {
+                    recordLight.state().setValue(PadLightState.solidLight(7));
+                }
+            }
+        });
+        mRecordAction.addValueObserver(val -> {
+            if (val.equals(CYCLE_TRACKS)) {
+                // cycle tracks lighting
+                recordLight.state().setValue(PadLightState.solidLight(13));
+            } else if (val.equals(LAUNCH_ALT)) {
+                recordLight.state().setValue(PadLightState.solidLight(3));
+            } else {
+                // Record action
+                if ((arrangerRecord.get() && mRecordLevel.get().equals(GLOBAL)) || (clipLauncherOverdub.get() && mRecordLevel.get().equals(CLIP_LAUNCHER))) {
+                    recordLight.state().setValue(PadLightState.solidLight(5));
+                } else {
+                    recordLight.state().setValue(PadLightState.solidLight(7));
+                }
+            }
+        });
 
-      AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
-      HardwareActionBindable mSessionAction = host.createAction(() -> {
-         switch(mMachine.mode()) {
-            case SESSION:
-               lastSessionMode.set(mixerMode.get());
-               mMachine.setMode(mLSurface, mixerMode.get());
-               break;
-            case MIXER_VOLUME:
-            case MIXER_PAN:
-            case MIXER_SEND:
-            case MIXER_CONTROLS:
-            case MIXER_STOP:
-            case MIXER_MUTE:
-            case MIXER_SOLO:
-            case MIXER_ARM:
-               lastSessionMode.set(Mode.SESSION);
-               mMachine.setMode(mLSurface, Mode.SESSION);
-               break;
-            case DRUM:
-            case UNKNOWN:
-               mMachine.setMode(mLSurface, lastSessionMode.get());
-               break;
-            default:
-               throw new RuntimeException("Unknown mode " + mMachine.mode());
-         }
-      }, () -> "Press Session View");
+        mLSurface.novation().light().state().setValue(PadLightState.solidLight(3));
 
-      HardwareActionBindable mNoteAction = host.createAction(() -> {
-         Mode om = mMachine.mode();
-         if(om != Mode.DRUM && om != Mode.UNKNOWN) {
-            lastSessionMode.set(om);
-         }
-         mSession.sendSysex("00 01");
-         mMachine.setMode(mLSurface, Mode.DRUM);
-      }, () -> "Press Note View");
+        AtomicReference<Mode> lastSessionMode = new AtomicReference<>(Mode.SESSION);
+        HardwareActionBindable mSessionAction = host.createAction(() -> {
+            switch (mMachine.mode()) {
+                case SESSION:
+                    lastSessionMode.set(mixerMode.get());
+                    mMachine.setMode(mLSurface, mixerMode.get());
+                    break;
+                case MIXER_VOLUME:
+                case MIXER_PAN:
+                case MIXER_SEND:
+                case MIXER_CONTROLS:
+                case MIXER_STOP:
+                case MIXER_MUTE:
+                case MIXER_SOLO:
+                case MIXER_ARM:
+                    lastSessionMode.set(Mode.SESSION);
+                    mMachine.setMode(mLSurface, Mode.SESSION);
+                    break;
+                case DRUM:
+                case UNKNOWN:
+                    mMachine.setMode(mLSurface, lastSessionMode.get());
+                    break;
+                default:
+                    throw new RuntimeException("Unknown mode " + mMachine.mode());
+            }
+        }, () -> "Press Session View");
 
-      HardwareActionBindable mCustomAction = host.createAction(() -> {
-         Mode om = mMachine.mode();
-         if(om != Mode.DRUM && om != Mode.UNKNOWN) {
-            lastSessionMode.set(om);
-         }
-         mMachine.setMode(mLSurface, Mode.UNKNOWN);
-      }, () -> "Press Custom View");
+        HardwareActionBindable mNoteAction = host.createAction(() -> {
+            Mode om = mMachine.mode();
+            if (om != Mode.DRUM && om != Mode.UNKNOWN) {
+                lastSessionMode.set(om);
+            }
+            mSession.sendSysex("00 01");
+            mMachine.setMode(mLSurface, Mode.DRUM);
+        }, () -> "Press Note View");
 
-      if(mSwapOnBoot.get()) {
-         mSessionAction.invoke();
-      } else {
-         mMachine.setMode(mLSurface, Mode.DRUM);
-      }
+        HardwareActionBindable mCustomAction = host.createAction(() -> {
+            Mode om = mMachine.mode();
+            if (om != Mode.DRUM && om != Mode.UNKNOWN) {
+                lastSessionMode.set(om);
+            }
+            mMachine.setMode(mLSurface, Mode.UNKNOWN);
+        }, () -> "Press Custom View");
 
-      mSessionAction.addBinding(mLSurface.session().button().pressedAction());
-      mNoteAction.addBinding(mLSurface.note().button().pressedAction());
-      mCustomAction.addBinding(mLSurface.custom().button().pressedAction());
+        if (mSwapOnBoot.get()) {
+            mSessionAction.invoke();
+        } else {
+            mMachine.setMode(mLSurface, Mode.DRUM);
+        }
 
-      mSession.setMidiCallback(ChannelType.DAW, this::onMidi0);
-      mSession.setSysexCallback(ChannelType.DAW, this::onSysex0);
-      mSession.setMidiCallback(ChannelType.CUSTOM, this::onMidi1);
+        mSessionAction.addBinding(mLSurface.session().button().pressedAction());
+        mNoteAction.addBinding(mLSurface.note().button().pressedAction());
+        mCustomAction.addBinding(mLSurface.custom().button().pressedAction());
 
-      System.out.println("Launchpad X Initialized");
+        mSession.setMidiCallback(ChannelType.DAW, this::onMidi0);
+        mSession.setSysexCallback(ChannelType.DAW, this::onSysex0);
+        mSession.setMidiCallback(ChannelType.CUSTOM, this::onMidi1);
 
-      host.requestFlush();
-   }
+        System.out.println("Launchpad X Initialized");
 
-   @Override
-   public void exit()
-   {
-      mSession.shutdown();
-      System.out.println("Launchpad X Exited");
-   }
+        host.requestFlush();
+    }
 
-   @Override
-   public void flush()
-   {
-      mSurface.updateHardware();
-   }
+    @Override
+    public void exit() {
+        mSession.shutdown();
+        System.out.println("Launchpad X Exited");
+    }
 
-   /** Called when we receive short MIDI message on port 0. */
-   private void onMidi0(ShortMidiMessage msg)
-   {
+    @Override
+    public void flush() {
+        mSurface.updateHardware();
+    }
+
+    /**
+     * Called when we receive short MIDI message on port 0.
+     */
+    private void onMidi0(ShortMidiMessage msg) {
 //      mSurface.invalidateHardwareOutputState();
 //      System.out.println(msg);
-   }
+    }
 
-   /** Called when we receive sysex MIDI message on port 0. */
-   private void onSysex0(final String data)
-   {
-      byte[] sysex = Utils.parseSysex(data);
-      mMachine.sendSysex(sysex);
-      mSurface.invalidateHardwareOutputState();
-   }
-   
-   /** Called when we receive short MIDI message on port 1. */
-   private void onMidi1(ShortMidiMessage msg)
-   {
+    /**
+     * Called when we receive sysex MIDI message on port 0.
+     */
+    private void onSysex0(final String data) {
+        byte[] sysex = Utils.parseSysex(data);
+        mMachine.sendSysex(sysex);
+        mSurface.invalidateHardwareOutputState();
+    }
+
+    /**
+     * Called when we receive short MIDI message on port 1.
+     */
+    private void onMidi1(ShortMidiMessage msg) {
 //       System.out.println("C: " + Utils.toHexString((byte)msg.getStatusByte()) + Utils.toHexString((byte)msg.getData1()) + Utils.toHexString((byte)msg.getData2()));
-   }
+    }
 
 //   /** Called when we receive sysex MIDI message on port 1. */
 //   private void onSysex1(final String data)
