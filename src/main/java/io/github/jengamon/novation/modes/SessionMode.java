@@ -17,8 +17,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SessionMode extends AbstractMode {
     private final SessionSceneLight[] sceneLights = new SessionSceneLight[8];
     private final HardwareActionBindable[] sceneLaunchActions = new HardwareActionBindable[8];
+    private final HardwareActionBindable[] sceneLaunchReleaseActions = new HardwareActionBindable[8];
     private final SessionPadLight[][] padLights = new SessionPadLight[8][8];
     private final HardwareActionBindable[][] padActions = new HardwareActionBindable[8][8];
+    private final HardwareActionBindable[][] padReleaseActions = new HardwareActionBindable[8][8];
     private final ArrowPadLight[] arrowLights = new ArrowPadLight[4];
     private final HardwareBindable[] arrowActions;
 
@@ -68,6 +70,13 @@ public class SessionMode extends AbstractMode {
                 }
                 scene.selectInEditor();
             }, () -> "Press Scene " + finalI);
+            sceneLaunchReleaseActions[i] = host.createAction(() -> {
+                if (launchAlt.get()) {
+                    scene.launchReleaseAlt();
+                } else {
+                    scene.launchRelease();
+                }
+            }, () -> "Release Scene " + finalI);
         }
 
         // Setup pad lights and buttons
@@ -100,6 +109,13 @@ public class SessionMode extends AbstractMode {
                         slot.launch();
                     }
                 }, () -> "Press Scene " + finalScene + " Track " + finalTrk);
+                padReleaseActions[scene][trk] = host.createAction(() -> {
+                    if (launchAlt.get()) {
+                        slot.launchReleaseAlt();
+                    } else {
+                        slot.launchRelease();
+                    }
+                }, () -> "Release Scene " + finalScene + " Track " + finalTrk);
             }
         }
 
@@ -128,10 +144,12 @@ public class SessionMode extends AbstractMode {
         List<HardwareBinding> bindings = new ArrayList<>();
         for(int i = 0; i < 8; i++) {
             bindings.add(surface.scenes()[i].button().pressedAction().addBinding(sceneLaunchActions[i]));
+            bindings.add(surface.scenes()[i].button().releasedAction().addBinding(sceneLaunchReleaseActions[i]));
         }
         for(int i = 0; i < 8; i++) {
             for(int j = 0; j < 8; j++) {
                 bindings.add(surface.notes()[i][j].button().pressedAction().addBinding(padActions[i][j]));
+                bindings.add(surface.notes()[i][j].button().releasedAction().addBinding(padReleaseActions[i][j]));
             }
         }
         LaunchpadXPad[] arrows = surface.arrows();
