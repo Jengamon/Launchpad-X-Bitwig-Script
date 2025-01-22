@@ -8,6 +8,7 @@ import io.github.jengamon.novation.surface.NoteButton;
 import io.github.jengamon.novation.surface.state.PadLightState;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RecordArmMixer extends AbstractSessionMixerMode {
@@ -47,8 +48,8 @@ public class RecordArmMixer extends AbstractSessionMixerMode {
     }
 
     public RecordArmMixer(AtomicReference<Mode> mixerMode, ControllerHost host, Transport transport,
-                          LaunchpadXSurface surface, TrackBank bank) {
-        super(mixerMode, host, transport, surface, bank, Mode.MIXER_ARM, 120);
+                          LaunchpadXSurface surface, TrackBank bank, AtomicBoolean launchAlt) {
+        super(mixerMode, host, transport, surface, bank, Mode.MIXER_ARM, 120, launchAlt);
 
         for(int i = 0; i < 8; i++) {
             Track track = bank.getItemAt(i);

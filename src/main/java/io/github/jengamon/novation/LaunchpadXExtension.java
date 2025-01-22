@@ -92,18 +92,6 @@ public class LaunchpadXExtension extends ControllerExtension {
         mLSurface = new LaunchpadXSurface(host, mSession, mSurface);
         mMachine = new ModeMachine(mSession);
 
-        // Mixer modes
-        AtomicReference<Mode> mixerMode = new AtomicReference<>(Mode.MIXER_VOLUME);
-        mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-        mMachine.register(Mode.MIXER_PAN, new PanMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-        mMachine.register(Mode.MIXER_SEND, new SendMixer(mixerMode, host, mTransport, mLSurface, mCursorTrack));
-        mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mControlsCursorDevice));
-        mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-        mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-        mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-        mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
-//      MidiIn dawIn = mSession.midiIn(ChannelType.DAW);
-
 
         // Setup "launchAlt" var
         AtomicBoolean launchAlt = new AtomicBoolean(false);
@@ -118,6 +106,16 @@ public class LaunchpadXExtension extends ControllerExtension {
                 return new ArrayList<>();
             }
         });
+        // Mixer modes
+        AtomicReference<Mode> mixerMode = new AtomicReference<>(Mode.MIXER_VOLUME);
+        mMachine.register(Mode.MIXER_VOLUME, new VolumeMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_PAN, new PanMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank));
+        mMachine.register(Mode.MIXER_SEND, new SendMixer(mixerMode, host, mTransport, mLSurface, mCursorTrack));
+        mMachine.register(Mode.MIXER_CONTROLS, new ControlsMixer(mixerMode, host, mTransport, mLSurface, mControlsCursorDevice));
+        mMachine.register(Mode.MIXER_STOP, new StopClipMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank, launchAlt));
+        mMachine.register(Mode.MIXER_MUTE, new MuteMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank, launchAlt));
+        mMachine.register(Mode.MIXER_SOLO, new SoloMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank, launchAlt));
+        mMachine.register(Mode.MIXER_ARM, new RecordArmMixer(mixerMode, host, mTransport, mLSurface, mSessionTrackBank, launchAlt));
         // Select record button behavior and light it accordingly
         mCursorTrack.hasNext().markInterested();
         AtomicBoolean recordActionToggle = new AtomicBoolean(false);
