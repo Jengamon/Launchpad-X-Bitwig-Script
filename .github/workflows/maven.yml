@@ -21,7 +21,7 @@ jobs:
       - name: Upload asset to release
         uses: Shopify/upload-to-release@v2.0.0
         with:
-          name: 'Launchpad X Extension'
+          name: 'LaunchpadX.bwextension'
           path: './target/LaunchpadX.bwextension'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           content-type: 'application/java-archive'
