@@ -9,7 +9,7 @@ public class Utils {
     private static final Color[] NOVATION_COLORS = new Color[]{
             // 00 - 07
             Color.fromRGBA255(0, 0, 0, 0),
-            Color.fromRGB255(0xb3, 0xb3, 0xb3),
+            Color.fromRGB255(0x50, 0x50, 0x50),
             Color.fromRGB255(0xdd, 0xdd, 0xdd),
             Color.fromRGB255(0xff, 0xff, 0xff),
             Color.fromRGB255(0xf9, 0xb3, 0xb2),
