@@ -29,6 +29,7 @@ public class SessionMode extends AbstractMode {
         private final BooleanValue mPulseSessionPads;
         private final ColorValue mSceneColor;
         private final BooleanValue mSceneExists;
+
         public SessionSceneLight(LaunchpadXSurface surface, Scene scene, BooleanValue pulseSessionPads, RangedValue bpm) {
             mBPM = bpm;
             mPulseSessionPads = pulseSessionPads;
@@ -43,8 +44,8 @@ public class SessionMode extends AbstractMode {
 
         public void draw(MultiStateHardwareLight sceneLight) {
             Color baseColor = mSceneColor.get();
-            if(mSceneExists.get()) {
-                if(mPulseSessionPads.get()) {
+            if (mSceneExists.get()) {
+                if (mPulseSessionPads.get()) {
                     sceneLight.state().setValue(PadLightState.pulseLight(mBPM.getRaw(), Utils.toNovation(baseColor)));
                 } else {
                     sceneLight.setColor(baseColor);
@@ -58,7 +59,7 @@ public class SessionMode extends AbstractMode {
         RangedValue bpm = transport.tempo().modulatedValue();
 
         // Set up scene buttons
-        for(int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++) {
             Scene scene = bank.sceneBank().getItemAt(i);
             sceneLights[i] = new SessionSceneLight(surface, scene, pulseSessionPads, bpm);
             int finalI = i;
@@ -91,10 +92,10 @@ public class SessionMode extends AbstractMode {
 
         since we want scenes to go down, we simply mark the indicies as (scene, track)
          */
-        for(int scene = 0; scene < 8; scene++) {
+        for (int scene = 0; scene < 8; scene++) {
             padActions[scene] = new HardwareActionBindable[8];
             padLights[scene] = new SessionPadLight[8];
-            for(int trk = 0; trk < 8; trk++) {
+            for (int trk = 0; trk < 8; trk++) {
                 Track track = bank.getItemAt(trk);
                 ClipLauncherSlotBank slotBank = track.clipLauncherSlotBank();
                 ClipLauncherSlot slot = slotBank.getItemAt(scene);
@@ -119,7 +120,7 @@ public class SessionMode extends AbstractMode {
             }
         }
 
-        arrowActions = new HardwareActionBindable[] {
+        arrowActions = new HardwareActionBindable[]{
                 bank.sceneBank().scrollBackwardsAction(),
                 bank.sceneBank().scrollForwardsAction(),
                 bank.scrollBackwardsAction(),
@@ -134,7 +135,7 @@ public class SessionMode extends AbstractMode {
         };
 
         LaunchpadXPad[] arrows = surface.arrows();
-        for(int i = 0; i < arrows.length; i++) {
+        for (int i = 0; i < arrows.length; i++) {
             arrowLights[i] = new ArrowPadLight(surface, arrowEnabled[i], this::redraw);
         }
     }
@@ -142,18 +143,18 @@ public class SessionMode extends AbstractMode {
     @Override
     public List<HardwareBinding> onBind(LaunchpadXSurface surface) {
         List<HardwareBinding> bindings = new ArrayList<>();
-        for(int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++) {
             bindings.add(surface.scenes()[i].button().pressedAction().addBinding(sceneLaunchActions[i]));
             bindings.add(surface.scenes()[i].button().releasedAction().addBinding(sceneLaunchReleaseActions[i]));
         }
-        for(int i = 0; i < 8; i++) {
-            for(int j = 0; j < 8; j++) {
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
                 bindings.add(surface.notes()[i][j].button().pressedAction().addBinding(padActions[i][j]));
                 bindings.add(surface.notes()[i][j].button().releasedAction().addBinding(padReleaseActions[i][j]));
             }
         }
         LaunchpadXPad[] arrows = surface.arrows();
-        for(int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             bindings.add(arrows[i].button().pressedAction().addBinding(arrowActions[i]));
         }
         return bindings;
@@ -162,16 +163,16 @@ public class SessionMode extends AbstractMode {
     @Override
     public void onDraw(LaunchpadXSurface surface) {
         LaunchpadXPad[] scenes = surface.scenes();
-        for(int i = 0; i < scenes.length; i++) {
+        for (int i = 0; i < scenes.length; i++) {
             sceneLights[i].draw(scenes[i].light());
         }
         LaunchpadXPad[] arrows = surface.arrows();
-        for(int i = 0; i < arrows.length; i++) {
+        for (int i = 0; i < arrows.length; i++) {
             arrowLights[i].draw(surface.arrows()[i].light());
         }
         LaunchpadXPad[][] pads = surface.notes();
-        for(int i = 0; i < pads.length; i++) {
-            for(int j = 0; j < pads[i].length; j++) {
+        for (int i = 0; i < pads.length; i++) {
+            for (int j = 0; j < pads[i].length; j++) {
                 padLights[i][j].draw(pads[i][j].light());
             }
         }
