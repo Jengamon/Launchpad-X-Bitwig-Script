@@ -316,6 +316,9 @@ public class LaunchpadXExtension extends ControllerExtension {
     @Override
     public void exit() {
         mSession.shutdown();
+        // Bitwig may not run another flush tick during shutdown, so force the
+        // queued MIDI out (including the LED sleep) to be sent to the hardware.
+        mSurface.invalidateHardwareOutputState();
         System.out.println("Launchpad X Exited");
     }
 

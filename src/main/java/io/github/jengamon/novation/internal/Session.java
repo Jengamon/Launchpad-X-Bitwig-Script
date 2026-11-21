@@ -32,6 +32,8 @@ public class Session {
         sendSysex("0e 00");
         // Switch on DAW mode (if not already)
         sendSysex("10 01");
+        // Wake the LEDs, they may have been put to sleep on a previous shutdown
+        sendSysex("09 01");
 
 //        forceSend();
     }
@@ -93,7 +95,11 @@ public class Session {
     }
 
     public void shutdown() {
+        // Revert the device to Standalone mode so it stays usable without a DAW
         sendSysex("10 00");
+        // Turn off all LEDs until they are woken again by this script (or by any
+        // pad/button press), so the surface doesn't stay lit after Bitwig closes.
+        sendSysex("09 00");
 //        forceSend();
     }
 
